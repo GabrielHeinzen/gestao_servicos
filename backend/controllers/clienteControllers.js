@@ -1,3 +1,5 @@
+const clienteModel = require("../models/clienteModel");
+
 async function cadastrar(req, res) {
     const cliente = req.body;
 
