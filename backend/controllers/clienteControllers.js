@@ -6,7 +6,6 @@ async function cadastrar(req, res) {
     const resultado = await clienteModel.criar(cliente);
 
     res.status(201).json(resultado);
-    
 }
 
 async function listar(req, res) {
@@ -24,9 +23,10 @@ async function buscarPorId(req, res) {
 }
 
 async function atualizar(req, res) {
+    const { id } = req.params;
     const cliente = req.body;
 
-    const resultado = await clienteModel.atualizar(cliente);
+    const resultado = await clienteModel.atualizar(id, cliente);
 
     res.status(200).json(resultado);
 }
@@ -45,4 +45,4 @@ module.exports = {
     buscarPorId,
     atualizar,
     excluir
-}; 
+};
