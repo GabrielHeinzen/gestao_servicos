@@ -1,3 +1,5 @@
+const db = require("../config/database");
+
 async function criar(cliente) {
     const resultado = await db.query(
         "INSERT INTO clientes (nome, senha, email) VALUES ($1, $2, $3) RETURNING *",
@@ -21,7 +23,7 @@ async function buscarPorId(id) {
     return resultado.rows[0];
 }
 
-async function atualizar(cliente) {
+async function atualizar(id, cliente) {
     const resultado = await db.query(
         "UPDATE clientes SET nome = $1, senha = $2, email = $3 WHERE id = $4 RETURNING *",
         [cliente.nome, cliente.senha, cliente.email, cliente.id]
