@@ -1,9 +1,35 @@
-import Clientes from './pages/clientes';
 import './App.css';
 import { useState } from 'react';
 
 const USUARIO_PADRAO = 'Gustavo Dums';
 const SENHA_PADRAO = '#12345';
+const OPCOES_MENU = [
+    {
+        id: 'servicos',
+        titulo: 'Serviços',
+        descricao: 'Cadastre e acompanhe os serviços que entram na empresa.',
+        status: 'Cadastro e finalização serão implementados na próxima etapa.',
+        icone: (
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M4 7h16" />
+                <path d="M4 12h16" />
+                <path d="M4 17h10" />
+            </svg>
+        ),
+    },
+    {
+        id: 'financeiro',
+        titulo: 'Financeiro',
+        descricao: 'Controle entradas, saídas e visão geral do caixa da empresa.',
+        status: 'O controle financeiro será conectado depois.',
+        icone: (
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M12 2v20" />
+                <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7H14a3.5 3.5 0 0 1 0 7H6" />
+            </svg>
+        ),
+    },
+];
 
 function App() {
     const [estaAutenticado, setEstaAutenticado] = useState(false);
@@ -11,6 +37,8 @@ function App() {
     const [senha, setSenha] = useState('');
     const [mostrarSenha, setMostrarSenha] = useState(false);
     const [erroLogin, setErroLogin] = useState('');
+    const [menuAtivo, setMenuAtivo] = useState(OPCOES_MENU[0].id);
+    const opcaoAtiva = OPCOES_MENU.find((opcao) => opcao.id === menuAtivo);
 
     function handleLogin(event) {
         event.preventDefault();
@@ -79,7 +107,46 @@ function App() {
     }
 
     return (
-        <Clientes />
+        <main className="app-shell">
+            <aside className="sidebar">
+                <div className="sidebar-brand">
+                    <span className="brand-mark">GS</span>
+                    <div>
+                        <strong>Gestão</strong>
+                        <span>Serviços</span>
+                    </div>
+                </div>
+
+                <nav className="sidebar-nav" aria-label="Menu principal">
+                    {OPCOES_MENU.map((opcao) => (
+                        <button
+                            key={opcao.id}
+                            className={opcao.id === menuAtivo ? 'nav-item active' : 'nav-item'}
+                            type="button"
+                            onClick={() => setMenuAtivo(opcao.id)}
+                        >
+                            {opcao.icone}
+                            <span>{opcao.titulo}</span>
+                        </button>
+                    ))}
+                </nav>
+            </aside>
+
+            <section className="home-content">
+                <header className="home-header">
+                    <p>Sistema local da empresa</p>
+                    <h1>{opcaoAtiva.titulo}</h1>
+                </header>
+
+                <div className="home-panel">
+                    <div className="panel-icon">{opcaoAtiva.icone}</div>
+                    <div>
+                        <h2>{opcaoAtiva.descricao}</h2>
+                        <p>{opcaoAtiva.status}</p>
+                    </div>
+                </div>
+            </section>
+        </main>
     );
 }
 
