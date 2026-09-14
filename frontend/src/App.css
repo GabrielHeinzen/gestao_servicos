@@ -352,3 +352,390 @@
     flex-direction: column;
   }
 }
+
+.production-page {
+  width: 100%;
+}
+
+.production-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 18px;
+  text-align: left;
+}
+
+.production-header p {
+  margin: 0 0 4px;
+  color: #737373;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.production-header h1 {
+  margin: 0;
+  color: #123866;
+  font-size: 34px;
+  font-weight: 800;
+  line-height: 1.1;
+}
+
+.add-item-button {
+  height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  border: 0;
+  border-radius: 8px;
+  padding: 0 16px;
+  background: #123866;
+  color: #fff;
+  cursor: pointer;
+  font: 700 14px/1 Inter, "Segoe UI", Roboto, Arial, sans-serif;
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.add-item-button span {
+  font-size: 21px;
+  line-height: 1;
+}
+
+.add-item-button:hover {
+  background: #0d2b50;
+}
+
+.add-item-button:active {
+  transform: translateY(1px);
+}
+
+.production-table-wrap {
+  overflow: visible;
+  border: 1px solid #e7ebf0;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 12px 28px rgba(30, 35, 40, 0.06);
+}
+
+.production-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.production-table th,
+.production-table td {
+  padding: 15px 18px;
+  text-align: left;
+  vertical-align: middle;
+}
+
+.production-table th {
+  color: #123866;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.production-table td {
+  border-top: 1px solid #eef1f4;
+  color: #435267;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.production-table tr:hover td {
+  background: #fafbfd;
+}
+
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 108px;
+  height: 28px;
+  border-radius: 999px;
+  padding: 0 10px;
+  background: #e8edf3;
+  color: #435267;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.status-pronto {
+  background: #e3f5ea;
+  color: #177044;
+}
+
+.status-coletado {
+  background: #e6efff;
+  color: #1d54a7;
+}
+
+.actions-menu {
+  position: relative;
+  width: max-content;
+}
+
+.row-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.actions-menu summary {
+  width: 92px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border-radius: 6px;
+  background: #123866;
+  color: #fff;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 700;
+  list-style: none;
+}
+
+.actions-menu summary::-webkit-details-marker {
+  display: none;
+}
+
+.actions-list {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 5;
+  width: 132px;
+  display: flex;
+  flex-direction: column;
+  padding: 6px;
+  border: 1px solid #e0e4ea;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 14px 26px rgba(18, 56, 102, 0.14);
+}
+
+.actions-list button {
+  height: 34px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: #26364a;
+  cursor: pointer;
+  font: 700 13px/1 Inter, "Segoe UI", Roboto, Arial, sans-serif;
+  text-align: left;
+  padding: 0 10px;
+}
+
+.actions-list button:hover {
+  background: #f0f4f8;
+}
+
+.delete-item-button {
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 6px;
+  background: #f3e8e8;
+  color: #a12323;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease;
+}
+
+.delete-item-button:hover {
+  background: #a12323;
+  color: #fff;
+}
+
+.delete-item-button:active {
+  transform: translateY(1px);
+}
+
+.delete-item-button svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2;
+}
+
+.empty-row {
+  height: 120px;
+  text-align: center;
+  color: #7a8696;
+}
+
+.production-error {
+  margin: 14px 0 0;
+  color: #b3261e;
+  font-size: 14px;
+  font-weight: 700;
+  text-align: left;
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(18, 24, 32, 0.44);
+  box-sizing: border-box;
+}
+
+.item-modal {
+  width: min(430px, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  border-radius: 8px;
+  padding: 22px;
+  background: #fff;
+  box-shadow: 0 24px 54px rgba(0, 0, 0, 0.22);
+  box-sizing: border-box;
+}
+
+.confirm-modal {
+  width: min(390px, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  border-radius: 8px;
+  padding: 22px;
+  background: #fff;
+  box-shadow: 0 24px 54px rgba(0, 0, 0, 0.22);
+  box-sizing: border-box;
+  text-align: left;
+}
+
+.confirm-modal h2 {
+  margin: 0;
+  color: #123866;
+  font-size: 22px;
+  font-weight: 800;
+}
+
+.confirm-modal p {
+  margin: 0;
+  color: #536174;
+  font-size: 15px;
+  line-height: 1.45;
+}
+
+.confirm-modal footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.item-modal header,
+.item-modal footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.item-modal h2 {
+  margin: 0;
+  color: #123866;
+  font-size: 22px;
+  font-weight: 800;
+}
+
+.item-modal header button {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 8px;
+  background: #eef1f4;
+  color: #303030;
+  cursor: pointer;
+  font-size: 24px;
+  line-height: 1;
+}
+
+.item-modal label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  color: #334155;
+  font-size: 13px;
+  font-weight: 800;
+  text-align: left;
+}
+
+.item-modal input {
+  height: 42px;
+  border: 1px solid #d7dde5;
+  border-radius: 8px;
+  padding: 0 12px;
+  color: #202124;
+  font: 500 15px/1 Inter, "Segoe UI", Roboto, Arial, sans-serif;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.item-modal input:focus {
+  border-color: #123866;
+  box-shadow: 0 0 0 3px rgba(18, 56, 102, 0.12);
+}
+
+.secondary-button,
+.primary-button,
+.danger-button {
+  height: 40px;
+  border: 0;
+  border-radius: 8px;
+  padding: 0 15px;
+  cursor: pointer;
+  font: 800 14px/1 Inter, "Segoe UI", Roboto, Arial, sans-serif;
+}
+
+.secondary-button {
+  background: #eef1f4;
+  color: #303030;
+}
+
+.primary-button {
+  background: #123866;
+  color: #fff;
+}
+
+.danger-button {
+  background: #a12323;
+  color: #fff;
+}
+
+.primary-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+@media (max-width: 860px) {
+  .production-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .add-item-button {
+    width: 100%;
+  }
+
+  .production-table-wrap {
+    overflow-x: auto;
+  }
+
+  .production-table {
+    min-width: 720px;
+  }
+}

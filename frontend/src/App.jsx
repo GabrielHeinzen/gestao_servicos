@@ -1,12 +1,13 @@
 import './App.css';
 import { useState } from 'react';
+import Producao from './pages/producao';
 
 const USUARIO_PADRAO = 'Gustavo Dums';
 const SENHA_PADRAO = '#12345';
 const OPCOES_MENU = [
     {
         id: 'servicos',
-        titulo: 'Serviços',
+        titulo: 'Produção',
         descricao: 'Cadastre e acompanhe os serviços que entram na empresa.',
         status: 'Cadastro e finalização serão implementados na próxima etapa.',
         icone: (
@@ -133,18 +134,24 @@ function App() {
             </aside>
 
             <section className="home-content">
-                <header className="home-header">
-                    <p>Sistema local da empresa</p>
-                    <h1>{opcaoAtiva.titulo}</h1>
-                </header>
+                {menuAtivo === 'servicos' ? (
+                    <Producao />
+                ) : (
+                    <>
+                        <header className="home-header">
+                            <p>Sistema local da empresa</p>
+                            <h1>{opcaoAtiva.titulo}</h1>
+                        </header>
 
-                <div className="home-panel">
-                    <div className="panel-icon">{opcaoAtiva.icone}</div>
-                    <div>
-                        <h2>{opcaoAtiva.descricao}</h2>
-                        <p>{opcaoAtiva.status}</p>
-                    </div>
-                </div>
+                        <div className="home-panel">
+                            <div className="panel-icon">{opcaoAtiva.icone}</div>
+                            <div>
+                                <h2>{opcaoAtiva.descricao}</h2>
+                                <p>{opcaoAtiva.status}</p>
+                            </div>
+                        </div>
+                    </>
+                )}
             </section>
         </main>
     );
