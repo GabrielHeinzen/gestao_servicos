@@ -39,7 +39,7 @@ Os dados ficam no volume `postgres_data` do Compose e **continuam salvos** depoi
 
 ### Portas e configuracao
 
-Por padrao, a interface usa a porta **5173** e o PostgreSQL fica disponivel apenas neste computador na porta **5433**. A API e acessada pelo frontend em `/api` e nao precisa de uma porta publica propria.
+Por padrao, a interface usa a porta **5173**. O PostgreSQL fica disponivel na porta **5433**, acessivel apenas pela propria maquina onde o projeto estiver rodando. A API e acessada pelo frontend em `/api` e nao precisa de uma porta publica propria.
 
 Para mudar as portas ou as credenciais de desenvolvimento, copie `.env.example` para `.env` na raiz e edite os valores antes de subir os servicos:
 
