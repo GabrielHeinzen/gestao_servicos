@@ -7,7 +7,6 @@ async function criar(cliente) {
     );
 
     return resultado.rows[0];
-
 }
 
 async function listar() {

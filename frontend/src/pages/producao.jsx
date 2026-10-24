@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Plus, Trash2, X } from 'lucide-react';
 import {
     atualizarProducao,
     atualizarStatusProducao,
@@ -134,7 +135,7 @@ function Producao() {
                 </div>
 
                 <button className="add-item-button" type="button" onClick={abrirCadastro}>
-                    <span>+</span>
+                    <Plus size={18} aria-hidden="true" />
                     Adicionar item
                 </button>
             </header>
@@ -192,13 +193,7 @@ function Producao() {
                                             aria-label={`Excluir item de ${item.cliente}`}
                                             title="Excluir"
                                         >
-                                            <svg viewBox="0 0 24 24" aria-hidden="true">
-                                                <path d="M3 6h18" />
-                                                <path d="M8 6V4h8v2" />
-                                                <path d="M19 6l-1 14H6L5 6" />
-                                                <path d="M10 11v5" />
-                                                <path d="M14 11v5" />
-                                            </svg>
+                                            <Trash2 size={18} aria-hidden="true" />
                                         </button>
                                     </div>
                                 </td>
@@ -215,7 +210,7 @@ function Producao() {
                     <form className="item-modal" onSubmit={salvarItem}>
                         <header>
                             <h2>{itemEditando ? 'Editar item' : 'Adicionar item'}</h2>
-                            <button type="button" onClick={fecharModal} aria-label="Fechar">×</button>
+                            <button type="button" onClick={fecharModal} aria-label="Fechar"><X size={18} /></button>
                         </header>
 
                         <label htmlFor="cliente">

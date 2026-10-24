@@ -85,3 +85,38 @@ export async function excluirProducao(id) {
     return response.json();
 }
 
+async function solicitarFinanceiro(caminho, opcoes) {
+    const response = await fetch(`${API_URL}/financeiro${caminho}`, opcoes);
+    const dados = await response.json();
+    if (!response.ok) throw new Error(dados.erro || 'Nao foi possivel concluir a operacao.');
+    return dados;
+}
+
+export function listarLancamentos(tipo) {
+    return solicitarFinanceiro(`/lancamentos?tipo=${encodeURIComponent(tipo)}`);
+}
+
+export function criarLancamento(item) {
+    return solicitarFinanceiro('/lancamentos', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(item)
+    });
+}
+
+export function atualizarLancamento(id, item) {
+    return solicitarFinanceiro(`/lancamentos/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(item)
+    });
+}
+
+export function excluirLancamento(id) {
+    return solicitarFinanceiro(`/lancamentos/${id}`, { method: 'DELETE' });
+}
+
+export function buscarRelatorio(ano) {
+    return solicitarFinanceiro(`/relatorios?ano=${ano}`);
+}
+

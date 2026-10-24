@@ -1,6 +1,9 @@
 import './App.css';
 import { useState } from 'react';
+import { ChartNoAxesCombined, Eye, EyeOff, Factory, LockKeyhole, LogOut, Receipt, UserRound, Wallet } from 'lucide-react';
 import Producao from './pages/producao';
+import Lancamentos from './pages/lancamentos';
+import Relatorios from './pages/relatorios';
 
 const USUARIO_PADRAO = 'Gustavo Dums';
 const SENHA_PADRAO = '#12345';
@@ -8,38 +11,34 @@ const OPCOES_MENU = [
     {
         id: 'servicos',
         titulo: 'Produção',
-        descricao: 'Cadastre e acompanhe os serviços que entram na empresa.',
-        status: 'Cadastro e finalização serão implementados na próxima etapa.',
-        icone: (
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M4 7h16" />
-                <path d="M4 12h16" />
-                <path d="M4 17h10" />
-            </svg>
-        ),
+        icone: Factory,
     },
     {
         id: 'financeiro',
-        titulo: 'Financeiro',
-        descricao: 'Controle entradas, saídas e visão geral do caixa da empresa.',
-        status: 'O controle financeiro será conectado depois.',
-        icone: (
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M12 2v20" />
-                <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7H14a3.5 3.5 0 0 1 0 7H6" />
-            </svg>
-        ),
+        titulo: 'Financeiro / Vendas',
+        icone: Wallet,
+    },
+    {
+        id: 'despesas',
+        titulo: 'Gastos / Despesas',
+        icone: Receipt,
+    },
+    {
+        id: 'relatorios',
+        titulo: 'Relatórios',
+        icone: ChartNoAxesCombined,
     },
 ];
 
 function App() {
     const [estaAutenticado, setEstaAutenticado] = useState(false);
-    const [usuario, setUsuario] = useState('');
+    const [usuario, setUsuario] = useState(() => localStorage.getItem('gestao_servicos_usuario') || '');
     const [senha, setSenha] = useState('');
     const [mostrarSenha, setMostrarSenha] = useState(false);
     const [erroLogin, setErroLogin] = useState('');
+    const [lembrar, setLembrar] = useState(() => Boolean(localStorage.getItem('gestao_servicos_usuario')));
     const [menuAtivo, setMenuAtivo] = useState(OPCOES_MENU[0].id);
-    const opcaoAtiva = OPCOES_MENU.find((opcao) => opcao.id === menuAtivo);
+    const [tipoFinanceiro, setTipoFinanceiro] = useState('romaneio');
 
     function handleLogin(event) {
         event.preventDefault();
@@ -50,6 +49,8 @@ function App() {
         }
 
         setErroLogin('');
+        if (lembrar) localStorage.setItem('gestao_servicos_usuario', usuario.trim());
+        else localStorage.removeItem('gestao_servicos_usuario');
         setEstaAutenticado(true);
     }
 
@@ -57,14 +58,23 @@ function App() {
         return (
             <main className="login-page">
                 <form className="login-card" onSubmit={handleLogin}>
-                    <h1>Bem vindo</h1>
+                    <div className="login-avatar" aria-hidden="true">
+                        <UserRound size={48} strokeWidth={1.5} />
+                    </div>
+
+                    <div className="login-heading">
+                        <h1>Bem-vindo</h1>
+                        <p>Acesse o sistema de gestao</p>
+                    </div>
 
                     <div className="login-field">
                         <label htmlFor="usuario">Usuario</label>
+                        <UserRound className="field-icon" size={18} aria-hidden="true" />
                         <input
                             id="usuario"
                             name="usuario"
                             type="text"
+                            placeholder="Usuario"
                             value={usuario}
                             onChange={(event) => setUsuario(event.target.value)}
                             autoComplete="username"
@@ -75,10 +85,12 @@ function App() {
                     <div className="login-field">
                         <label htmlFor="senha">Senha</label>
                         <div className="password-input">
+                            <LockKeyhole className="field-icon" size={18} aria-hidden="true" />
                             <input
                                 id="senha"
                                 name="senha"
                                 type={mostrarSenha ? 'text' : 'password'}
+                                placeholder="Senha"
                                 value={senha}
                                 onChange={(event) => setSenha(event.target.value)}
                                 autoComplete="current-password"
@@ -91,13 +103,15 @@ function App() {
                                 aria-label={mostrarSenha ? 'Ocultar senha' : 'Mostrar senha'}
                                 title={mostrarSenha ? 'Ocultar senha' : 'Mostrar senha'}
                             >
-                                <svg viewBox="0 0 24 24" aria-hidden="true">
-                                    <path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z" />
-                                    <circle cx="12" cy="12" r="3" />
-                                </svg>
+                                {mostrarSenha ? <EyeOff size={18} aria-hidden="true" /> : <Eye size={18} aria-hidden="true" />}
                             </button>
                         </div>
                     </div>
+
+                    <label className="remember-option">
+                        <input type="checkbox" checked={lembrar} onChange={(event) => setLembrar(event.target.checked)} />
+                        <span>Lembrar usuário</span>
+                    </label>
 
                     {erroLogin && <p className="login-error">{erroLogin}</p>}
 
@@ -111,7 +125,9 @@ function App() {
         <main className="app-shell">
             <aside className="sidebar">
                 <div className="sidebar-brand">
-                    <span className="brand-mark">GS</span>
+                    <span className="brand-mark">
+                        <img src="/logo-gestao.png" alt="Logo Gestão Serviços" />
+                    </span>
                     <div>
                         <strong>Gestão</strong>
                         <span>Serviços</span>
@@ -126,32 +142,22 @@ function App() {
                             type="button"
                             onClick={() => setMenuAtivo(opcao.id)}
                         >
-                            {opcao.icone}
+                            <opcao.icone size={19} strokeWidth={1.9} aria-hidden="true" />
                             <span>{opcao.titulo}</span>
                         </button>
                     ))}
                 </nav>
+                <div className="sidebar-footer">
+                    <div className="sidebar-user"><span className="sidebar-user-avatar">GD</span><span>Gustavo Dums</span></div>
+                    <button type="button" className="logout-button" onClick={() => { setEstaAutenticado(false); setSenha(''); setMenuAtivo('servicos'); }} title="Sair" aria-label="Sair"><LogOut size={18} /></button>
+                </div>
             </aside>
 
             <section className="home-content">
-                {menuAtivo === 'servicos' ? (
-                    <Producao />
-                ) : (
-                    <>
-                        <header className="home-header">
-                            <p>Sistema local da empresa</p>
-                            <h1>{opcaoAtiva.titulo}</h1>
-                        </header>
-
-                        <div className="home-panel">
-                            <div className="panel-icon">{opcaoAtiva.icone}</div>
-                            <div>
-                                <h2>{opcaoAtiva.descricao}</h2>
-                                <p>{opcaoAtiva.status}</p>
-                            </div>
-                        </div>
-                    </>
-                )}
+                {menuAtivo === 'servicos' && <Producao />}
+                {menuAtivo === 'financeiro' && <Lancamentos tipo={tipoFinanceiro} onTipoChange={setTipoFinanceiro} />}
+                {menuAtivo === 'despesas' && <Lancamentos tipo="despesa" />}
+                {menuAtivo === 'relatorios' && <Relatorios />}
             </section>
         </main>
     );
