@@ -1,4 +1,4 @@
-const API_URL = "http://localhost:3000";
+const API_URL = "/api";
 
 export async function listarClientes() {
     const response = await fetch(`${API_URL}/cliente`);
