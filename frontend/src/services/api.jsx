@@ -2,7 +2,9 @@ const API_URL = "/api";
 
 export async function listarClientes() {
     const response = await fetch(`${API_URL}/cliente`);
-    return response.json();
+    const dados = await response.json();
+    if (!response.ok) throw new Error(dados.erro || 'Nao foi possivel carregar os clientes.');
+    return dados;
 }
 
 export async function buscarClientePorId(id) {
@@ -19,7 +21,9 @@ export async function cadastrarCliente(cliente) {
         },
         body: JSON.stringify(cliente)
     });
-    return response.json();
+    const dados = await response.json();
+    if (!response.ok) throw new Error(dados.erro || 'Nao foi possivel cadastrar o cliente.');
+    return dados;
 }
 
 export async function atualizarCliente(id, cliente) {
@@ -30,59 +34,65 @@ export async function atualizarCliente(id, cliente) {
         },
         body: JSON.stringify(cliente)
     });
-    return response.json();
+    const dados = await response.json();
+    if (!response.ok) throw new Error(dados.erro || 'Nao foi possivel atualizar o cliente.');
+    return dados;
 }
 
 export async function excluirCliente(id) {
     const response = await fetch(`${API_URL}/cliente/${id}`, {
         method: "DELETE"
     });
-    return response.json();
+    const dados = await response.json();
+    if (!response.ok) throw new Error(dados.erro || 'Nao foi possivel excluir o cliente.');
+    return dados;
 }
 
-export async function listarProducao() {
-    const response = await fetch(`${API_URL}/producao`);
-    return response.json();
+async function solicitarProducao(caminho = '', opcoes) {
+    const response = await fetch(`${API_URL}/producao${caminho}`, opcoes);
+    const dados = await response.json();
+    if (!response.ok) throw new Error(dados.erro || 'Nao foi possivel concluir a operacao.');
+    return dados;
 }
 
-export async function cadastrarProducao(item) {
-    const response = await fetch(`${API_URL}/producao`, {
+export function listarProducao() {
+    return solicitarProducao();
+}
+
+export function cadastrarProducao(item) {
+    return solicitarProducao('', {
         method: "POST",
         headers: {
             "Content-Type": "application/json"
         },
         body: JSON.stringify(item)
     });
-    return response.json();
 }
 
-export async function atualizarProducao(id, item) {
-    const response = await fetch(`${API_URL}/producao/${id}`, {
+export function atualizarProducao(id, item) {
+    return solicitarProducao(`/${id}`, {
         method: "PUT",
         headers: {
             "Content-Type": "application/json"
         },
         body: JSON.stringify(item)
     });
-    return response.json();
 }
 
-export async function atualizarStatusProducao(id, status) {
-    const response = await fetch(`${API_URL}/producao/${id}/status`, {
+export function atualizarStatusProducao(id, status) {
+    return solicitarProducao(`/${id}/status`, {
         method: "PATCH",
         headers: {
             "Content-Type": "application/json"
         },
         body: JSON.stringify({ status })
     });
-    return response.json();
 }
 
-export async function excluirProducao(id) {
-    const response = await fetch(`${API_URL}/producao/${id}`, {
+export function excluirProducao(id) {
+    return solicitarProducao(`/${id}`, {
         method: "DELETE"
     });
-    return response.json();
 }
 
 async function solicitarFinanceiro(caminho, opcoes) {
@@ -116,7 +126,7 @@ export function excluirLancamento(id) {
     return solicitarFinanceiro(`/lancamentos/${id}`, { method: 'DELETE' });
 }
 
-export function buscarRelatorio(ano) {
-    return solicitarFinanceiro(`/relatorios?ano=${ano}`);
+export function buscarRelatorio(ano, mes) {
+    return solicitarFinanceiro(`/relatorios?ano=${ano}&mes=${mes}`);
 }
 

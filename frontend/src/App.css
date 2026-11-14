@@ -837,7 +837,8 @@
   text-align: left;
 }
 
-.item-modal input {
+.item-modal input,
+.item-modal select {
   height: 42px;
   border: 1px solid #d7dde5;
   border-radius: 8px;
@@ -848,10 +849,28 @@
   box-sizing: border-box;
 }
 
-.item-modal input:focus {
+.item-modal select {
+  background: #fff;
+  cursor: pointer;
+}
+
+.item-modal input:focus,
+.item-modal select:focus {
   border-color: #31845a;
   box-shadow: 0 0 0 3px rgba(49, 132, 90, 0.13);
 }
+
+.inline-client-button {
+  align-self: flex-start;
+  border: 0;
+  padding: 2px 0;
+  background: transparent;
+  color: #286144;
+  cursor: pointer;
+  font: 700 12px Inter, "Segoe UI", Roboto, Arial, sans-serif;
+}
+
+.inline-client-button:hover { text-decoration: underline; }
 
 .secondary-button,
 .primary-button,
@@ -1092,6 +1111,28 @@
 .finance-modal { max-height: min(92svh, 720px); overflow-y: auto; }
 .finance-modal header button { font-size: 0; }
 
+.clients-summary {
+  width: min(360px, 100%);
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 30px;
+  padding: 18px 20px;
+  border: 1px solid #dce9df;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.72);
+  box-sizing: border-box;
+}
+
+.clients-summary > div { display: flex; flex-direction: column; gap: 4px; }
+.clients-summary > div span { color: #658171; font-size: 12px; font-weight: 700; }
+.clients-summary strong { color: #1c4b36; font-size: 25px; line-height: 1; }
+.clients-table-wrap { overflow-x: auto; }
+.clients-table { min-width: 520px; }
+.clients-table th:last-child,
+.clients-table td:last-child { width: 110px; }
+.clients-table .company-cell { color: #294d38; font-weight: 700; }
+
 .report-period-filters { display: flex; align-items: center; gap: 16px; }
 .period-select { display: flex; align-items: center; gap: 9px; color: #60806b; font-size: 13px; font-weight: 700; }
 .period-select select { height: 39px; min-width: 94px; padding: 0 12px; border: 1px solid #cddfd2; border-radius: 7px; background: #fff; color: #234c37; font: 700 14px Inter, "Segoe UI", Roboto, Arial, sans-serif; cursor: pointer; outline: none; }
@@ -1099,6 +1140,20 @@
 .period-select select:focus-visible { border-color: #57956e; box-shadow: 0 0 0 3px rgba(66, 135, 85, 0.11); }
 .report-metrics { grid-template-columns: repeat(3, minmax(0, 1fr)); margin-bottom: 36px; }
 .report-metrics-annual { margin-top: -20px; }
+.report-metrics-revenue { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.report-type-tabs { position: relative; isolation: isolate; display: inline-grid; grid-template-columns: repeat(3, 112px); gap: 4px; margin-bottom: 30px; padding: 4px; border: 1px solid #d5e5d9; border-radius: 8px; background: #e8f1ea; }
+.report-type-tabs::before { content: ""; position: absolute; top: 4px; left: 4px; z-index: 0; width: 112px; height: 38px; border-radius: 6px; background: #fff; box-shadow: 0 2px 8px rgba(24, 73, 49, 0.1); transition: transform 280ms cubic-bezier(0.22, 1, 0.36, 1); }
+.report-type-tabs[data-active="nf"]::before { transform: translateX(116px); }
+.report-type-tabs[data-active="romaneio"]::before { transform: translateX(232px); }
+.report-type-tabs button { position: relative; z-index: 1; min-width: 112px; height: 38px; border: 0; border-radius: 6px; padding: 0 16px; background: transparent; color: #54715f; cursor: pointer; font: 700 13px Inter, "Segoe UI", Roboto, Arial, sans-serif; transition: color 220ms ease, transform 160ms ease; }
+.report-type-tabs button:hover { color: #174934; }
+.report-type-tabs button:active { transform: scale(0.98); }
+.report-type-tabs button:focus-visible { outline: 2px solid #31845a; outline-offset: 2px; }
+.report-type-tabs button.active { color: #174934; }
+.report-content { animation: finance-content-in 240ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+.report-period-title { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; margin: 0 0 12px; }
+.report-period-title h2 { margin: 0; color: #214b37; font-size: 17px; }
+.report-period-title span { color: #789282; font-size: 12px; font-weight: 700; }
 .metric { gap: 9px; }
 .metric-icon { width: 32px; height: 32px; display: grid; place-items: center; border-radius: 7px; background: #e3f0e7; color: #286144; }
 .metric-icon.expense { background: #f7ede7; color: #a26745; }
@@ -1122,8 +1177,12 @@
 .chart-month { font-weight: 700; }
 .chart-romaneio { fill: #276348; }
 .chart-nf { fill: #88b59a; }
+.chart-general { fill: #2f7d5a; }
 .chart-profit { fill: #38846a; }
 .chart-loss { fill: #bf806e; }
+.chart-legend i.chart-romaneio { background: #276348; }
+.chart-legend i.chart-nf { background: #88b59a; }
+.chart-legend i.chart-general { background: #2f7d5a; }
 
 @media (max-width: 760px) {
   .screen-header { align-items: stretch; flex-direction: column; }
@@ -1133,6 +1192,11 @@
   .finance-summary > div, .metric { padding: 16px; }
   .finance-summary strong, .metric strong { font-size: 20px; }
   .report-metrics { grid-template-columns: 1fr; gap: 10px; }
+  .report-type-tabs { width: 100%; grid-template-columns: repeat(3, minmax(0, 1fr)); box-sizing: border-box; }
+  .report-type-tabs::before { width: calc((100% - 16px) / 3); }
+  .report-type-tabs[data-active="nf"]::before { transform: translateX(calc(100% + 4px)); }
+  .report-type-tabs[data-active="romaneio"]::before { transform: translateX(calc(200% + 8px)); }
+  .report-type-tabs button { min-width: 0; padding: 0 8px; }
   .list-heading { align-items: stretch; flex-direction: column; }
   .search-box { width: 100%; max-width: none; }
   .chart-header { flex-direction: column; }
@@ -1140,7 +1204,9 @@
 
 @media (prefers-reduced-motion: reduce) {
   .finance-tabs::before,
-  .finance-tabs button {
+  .finance-tabs button,
+  .report-type-tabs::before,
+  .report-type-tabs button {
     transition: none;
   }
 

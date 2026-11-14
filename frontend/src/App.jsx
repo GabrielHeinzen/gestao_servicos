@@ -1,9 +1,10 @@
 import './App.css';
 import { useState } from 'react';
-import { ChartNoAxesCombined, Eye, EyeOff, Factory, LockKeyhole, LogOut, Receipt, UserRound, Wallet } from 'lucide-react';
+import { ChartNoAxesCombined, Eye, EyeOff, Factory, LockKeyhole, LogOut, Receipt, UserRound, UsersRound, Wallet } from 'lucide-react';
 import Producao from './pages/producao';
 import Lancamentos from './pages/lancamentos';
 import Relatorios from './pages/relatorios';
+import Clientes from './pages/clientes';
 
 const USUARIO_PADRAO = 'Gustavo Dums';
 const SENHA_PADRAO = '#12345';
@@ -17,6 +18,11 @@ const OPCOES_MENU = [
         id: 'financeiro',
         titulo: 'Financeiro / Vendas',
         icone: Wallet,
+    },
+    {
+        id: 'clientes',
+        titulo: 'Clientes',
+        icone: UsersRound,
     },
     {
         id: 'despesas',
@@ -154,8 +160,9 @@ function App() {
             </aside>
 
             <section className="home-content">
-                {menuAtivo === 'servicos' && <Producao />}
-                {menuAtivo === 'financeiro' && <Lancamentos tipo={tipoFinanceiro} onTipoChange={setTipoFinanceiro} />}
+                {menuAtivo === 'servicos' && <Producao onAbrirClientes={() => setMenuAtivo('clientes')} />}
+                {menuAtivo === 'financeiro' && <Lancamentos tipo={tipoFinanceiro} onTipoChange={setTipoFinanceiro} onAbrirClientes={() => setMenuAtivo('clientes')} />}
+                {menuAtivo === 'clientes' && <Clientes />}
                 {menuAtivo === 'despesas' && <Lancamentos tipo="despesa" />}
                 {menuAtivo === 'relatorios' && <Relatorios />}
             </section>

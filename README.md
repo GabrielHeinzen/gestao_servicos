@@ -5,9 +5,12 @@ Sistema local para acompanhar a producao e os lancamentos financeiros de uma emp
 ## O que faz
 
 - **Producao:** cadastro de lotes com cliente, tipo de lamina e data; edicao, exclusao com confirmacao e status `Em producao`, `Pronto` ou `Coletado`.
-- **Financeiro:** registro de romaneios e notas fiscais (NF).
+- **Clientes:** cadastro das empresas pelo nome para uso nos lancamentos financeiros.
+- **Financeiro:** registro de romaneios e notas fiscais (NF) vinculados aos clientes cadastrados.
 - **Gastos / Despesas:** registro de documento, empresa, data e valor.
-- **Relatorios:** faturamento, despesas e lucro por mes e por ano, com graficos.
+- **Relatorios:** visoes separadas de NF, Romaneio e Geral, com graficos mensais e anuais.
+
+No relatorio Geral, um Romaneio nao e somado novamente quando existe uma NF com o mesmo cliente, data e valor. Nesse caso, apenas a NF entra no faturamento geral. Os relatorios separados continuam mostrando todos os Romaneios e todas as NFs.
 
 ## Tecnologias
 

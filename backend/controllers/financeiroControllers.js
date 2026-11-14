@@ -1,4 +1,6 @@
 const financeiroModel = require('../models/financeiroModel');
+const clienteModel = require('../models/clienteModel');
+const { calcularRelatorio } = require('../services/relatorioService');
 
 function dataValida(valor) {
     if (typeof valor !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(valor)) return false;
@@ -7,25 +9,34 @@ function dataValida(valor) {
     return data.getUTCFullYear() === ano && data.getUTCMonth() === mes - 1 && data.getUTCDate() === dia;
 }
 
-function validar(body, tipoObrigatorio) {
+async function validar(body, tipoObrigatorio) {
     const tipo = tipoObrigatorio || body.tipo;
-    const empresa = typeof body.empresa === 'string' ? body.empresa.trim() : '';
+    let empresa = typeof body.empresa === 'string' ? body.empresa.trim() : '';
     const numero_nf = typeof body.numero_nf === 'string' ? body.numero_nf.trim() : '';
     const documento = typeof body.documento === 'string' ? body.documento.trim() : '';
     const valor = Number(body.valor);
+    const clienteId = Number(body.cliente_id);
 
     if (!financeiroModel.TIPOS.includes(tipo)) return { erro: 'Tipo de lancamento invalido.' };
-    if (!empresa || empresa.length > 120) return { erro: 'Informe uma empresa com ate 120 caracteres.' };
     if (!dataValida(body.data)) return { erro: 'Informe uma data valida.' };
     if (!Number.isFinite(valor) || valor <= 0 || valor > 999999999999.99 || Math.round(valor * 100) / 100 !== valor) {
         return { erro: 'Informe um valor positivo com ate duas casas decimais.' };
     }
     if (tipo === 'nf' && (!numero_nf || numero_nf.length > 80)) return { erro: 'Informe o numero da NF.' };
     if (tipo === 'despesa' && (!documento || documento.length > 120)) return { erro: 'Informe o documento.' };
+    if (tipo === 'despesa') {
+        if (!empresa || empresa.length > 120) return { erro: 'Informe uma empresa com ate 120 caracteres.' };
+    } else {
+        if (!Number.isSafeInteger(clienteId) || clienteId <= 0) return { erro: 'Selecione um cliente cadastrado.' };
+        const cliente = await clienteModel.buscarPorId(clienteId);
+        if (!cliente) return { erro: 'O cliente selecionado nao foi encontrado.' };
+        empresa = cliente.nome;
+    }
 
     return {
         item: {
             tipo,
+            cliente_id: tipo === 'despesa' ? null : clienteId,
             numero_nf: tipo === 'nf' ? numero_nf : null,
             documento: tipo === 'despesa' ? documento : null,
             empresa,
@@ -50,9 +61,9 @@ async function listar(req, res) {
 }
 
 async function criar(req, res) {
-    const { item, erro } = validar(req.body || {});
-    if (erro) return res.status(400).json({ erro });
     try {
+        const { item, erro } = await validar(req.body || {});
+        if (erro) return res.status(400).json({ erro });
         return res.status(201).json(await financeiroModel.criar(item));
     } catch {
         return res.status(500).json({ erro: 'Nao foi possivel salvar o lancamento.' });
@@ -61,9 +72,9 @@ async function criar(req, res) {
 
 async function atualizar(req, res) {
     if (!idValido(req.params.id)) return res.status(400).json({ erro: 'ID invalido.' });
-    const { item, erro } = validar(req.body || {});
-    if (erro) return res.status(400).json({ erro });
     try {
+        const { item, erro } = await validar(req.body || {});
+        if (erro) return res.status(400).json({ erro });
         const resultado = await financeiroModel.atualizar(req.params.id, item);
         return resultado ? res.json(resultado) : res.status(404).json({ erro: 'Lancamento nao encontrado.' });
     } catch {
@@ -83,28 +94,16 @@ async function excluir(req, res) {
 
 async function relatorio(req, res) {
     const ano = Number(req.query.ano);
+    const mes = Number(req.query.mes);
     if (!/^\d{4}$/.test(String(req.query.ano)) || ano < 2000 || ano > 2100) {
         return res.status(400).json({ erro: 'Informe um ano entre 2000 e 2100.' });
     }
+    if (!/^\d{1,2}$/.test(String(req.query.mes)) || mes < 1 || mes > 12) {
+        return res.status(400).json({ erro: 'Informe um mes entre 1 e 12.' });
+    }
     try {
         const registros = await financeiroModel.relatorio(ano);
-        const meses = Array.from({ length: 12 }, (_, indice) => ({
-            mes: indice + 1, romaneio: 0, nf: 0, despesas: 0, faturamento: 0, lucro: 0
-        }));
-        for (const registro of registros) {
-            const mes = meses[registro.mes - 1];
-            mes[registro.tipo === 'despesa' ? 'despesas' : registro.tipo] = Number(registro.total);
-        }
-        for (const mes of meses) {
-            mes.faturamento = Math.round((mes.romaneio + mes.nf) * 100) / 100;
-            mes.lucro = Math.round((mes.faturamento - mes.despesas) * 100) / 100;
-        }
-        const totais = meses.reduce((acumulado, mes) => ({
-            faturamento: acumulado.faturamento + mes.faturamento,
-            despesas: acumulado.despesas + mes.despesas,
-            lucro: acumulado.lucro + mes.lucro
-        }), { faturamento: 0, despesas: 0, lucro: 0 });
-        return res.json({ ano, meses, totais });
+        return res.json(calcularRelatorio(registros, ano, mes));
     } catch {
         return res.status(500).json({ erro: 'Nao foi possivel gerar o relatorio.' });
     }

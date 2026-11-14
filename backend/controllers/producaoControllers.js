@@ -1,14 +1,21 @@
 const producaoModel = require("../models/producaoModel");
+const clienteModel = require('../models/clienteModel');
+
+async function validarItem(body) {
+    const clienteId = Number(body.cliente_id);
+    const tipoLamina = typeof body.tipo_lamina === 'string' ? body.tipo_lamina.trim() : '';
+    if (!Number.isSafeInteger(clienteId) || clienteId <= 0) return { erro: 'Selecione um cliente cadastrado.' };
+    if (!tipoLamina || !body.data) return { erro: 'Tipo lamina e data sao obrigatorios.' };
+    const cliente = await clienteModel.buscarPorId(clienteId);
+    if (!cliente) return { erro: 'O cliente selecionado nao foi encontrado.' };
+    return { item: { cliente_id: clienteId, cliente: cliente.nome, tipo_lamina: tipoLamina, data: body.data } };
+}
 
 async function cadastrar(req, res) {
     try {
-        const { cliente, tipo_lamina, data } = req.body;
-
-        if (!cliente || !tipo_lamina || !data) {
-            return res.status(400).json({ erro: "Cliente, tipo lamina e data sao obrigatorios." });
-        }
-
-        const resultado = await producaoModel.criar({ cliente, tipo_lamina, data });
+        const { item, erro } = await validarItem(req.body || {});
+        if (erro) return res.status(400).json({ erro });
+        const resultado = await producaoModel.criar(item);
 
         return res.status(201).json(resultado);
     } catch (error) {
@@ -29,13 +36,9 @@ async function listar(req, res) {
 async function atualizar(req, res) {
     try {
         const { id } = req.params;
-        const { cliente, tipo_lamina, data } = req.body;
-
-        if (!cliente || !tipo_lamina || !data) {
-            return res.status(400).json({ erro: "Cliente, tipo lamina e data sao obrigatorios." });
-        }
-
-        const resultado = await producaoModel.atualizar(id, { cliente, tipo_lamina, data });
+        const { item, erro } = await validarItem(req.body || {});
+        if (erro) return res.status(400).json({ erro });
+        const resultado = await producaoModel.atualizar(id, item);
 
         if (!resultado) {
             return res.status(404).json({ erro: "Item de producao nao encontrado." });

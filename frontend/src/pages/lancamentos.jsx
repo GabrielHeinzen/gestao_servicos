@@ -4,6 +4,7 @@ import {
     atualizarLancamento,
     criarLancamento,
     excluirLancamento,
+    listarClientes,
     listarLancamentos
 } from '../services/api';
 import { formatarData, formatarMoeda } from '../utils/formatacao';
@@ -15,11 +16,12 @@ const TIPOS = {
 };
 
 function formularioVazio() {
-    return { empresa: '', data: new Date().toLocaleDateString('en-CA'), valor: '', numero_nf: '', documento: '' };
+    return { cliente_id: '', empresa: '', data: new Date().toLocaleDateString('en-CA'), valor: '', numero_nf: '', documento: '' };
 }
 
-function Lancamentos({ tipo, onTipoChange }) {
+function Lancamentos({ tipo, onTipoChange, onAbrirClientes }) {
     const [itens, setItens] = useState([]);
+    const [clientes, setClientes] = useState([]);
     const [carregando, setCarregando] = useState(true);
     const [versao, setVersao] = useState(0);
     const [busca, setBusca] = useState('');
@@ -52,6 +54,15 @@ function Lancamentos({ tipo, onTipoChange }) {
         return () => { ativo = false; };
     }, [tipo, versao]);
 
+    useEffect(() => {
+        if (tipo === 'despesa') return undefined;
+        let ativo = true;
+        listarClientes()
+            .then((dados) => { if (ativo) setClientes(dados); })
+            .catch((falha) => { if (ativo) setErro(falha.message); });
+        return () => { ativo = false; };
+    }, [tipo, versao]);
+
     function recarregar() {
         setCarregando(true);
         setVersao((valor) => valor + 1);
@@ -65,7 +76,10 @@ function Lancamentos({ tipo, onTipoChange }) {
     }
 
     function abrirEdicao(item) {
+        const clienteCorrespondente = clientes.find((cliente) => cliente.id === Number(item.cliente_id))
+            || clientes.find((cliente) => cliente.nome.toLocaleLowerCase('pt-BR') === item.empresa.toLocaleLowerCase('pt-BR'));
         setFormulario({
+            cliente_id: clienteCorrespondente?.id ? String(clienteCorrespondente.id) : '',
             empresa: item.empresa,
             data: item.data,
             valor: item.valor,
@@ -81,7 +95,12 @@ function Lancamentos({ tipo, onTipoChange }) {
         event.preventDefault();
         setSalvando(true);
         setErroModal('');
-        const item = { ...formulario, tipo, valor: Number(formulario.valor) };
+        const item = {
+            ...formulario,
+            cliente_id: tipo === 'despesa' ? null : Number(formulario.cliente_id),
+            tipo,
+            valor: Number(formulario.valor)
+        };
         try {
             if (editando) await atualizarLancamento(editando.id, item);
             else await criarLancamento(item);
@@ -187,7 +206,15 @@ function Lancamentos({ tipo, onTipoChange }) {
                     <header><h2 id="finance-modal-title">{editando ? 'Editar' : 'Adicionar'} {TIPOS[tipo].singular.toLowerCase()}</h2><button type="button" onClick={() => setModalAberto(false)} aria-label="Fechar"><X size={18} /></button></header>
                     {tipo === 'nf' && <label htmlFor="numero_nf">Número NF<input id="numero_nf" name="numero_nf" value={formulario.numero_nf} maxLength={80} onChange={(event) => setFormulario({ ...formulario, numero_nf: event.target.value })} required /></label>}
                     {tipo === 'despesa' && <label htmlFor="documento">Documento<input id="documento" name="documento" value={formulario.documento} maxLength={120} onChange={(event) => setFormulario({ ...formulario, documento: event.target.value })} required /></label>}
-                    <label htmlFor="empresa">Empresa<input id="empresa" name="empresa" value={formulario.empresa} maxLength={120} onChange={(event) => setFormulario({ ...formulario, empresa: event.target.value })} required /></label>
+                    {tipo === 'despesa' ?
+                        <label htmlFor="empresa">Empresa<input id="empresa" name="empresa" value={formulario.empresa} maxLength={120} onChange={(event) => setFormulario({ ...formulario, empresa: event.target.value })} required /></label> :
+                        <label htmlFor="cliente-financeiro">Cliente
+                            <select id="cliente-financeiro" name="cliente_id" value={formulario.cliente_id} onChange={(event) => setFormulario({ ...formulario, cliente_id: event.target.value })} required>
+                                <option value="">Selecione um cliente</option>
+                                {clientes.map((cliente) => <option key={cliente.id} value={cliente.id}>{cliente.nome}</option>)}
+                            </select>
+                            {clientes.length === 0 && <button className="inline-client-button" type="button" onClick={() => { setModalAberto(false); onAbrirClientes?.(); }}>Cadastrar primeiro cliente</button>}
+                        </label>}
                     <label htmlFor="data-financeira">{tipo === 'despesa' ? 'Data de compra' : 'Data'}<input id="data-financeira" name="data" type="date" value={formulario.data} onChange={(event) => setFormulario({ ...formulario, data: event.target.value })} required /></label>
                     <label htmlFor="valor">Valor<input id="valor" name="valor" type="number" inputMode="decimal" step="0.01" min="0.01" value={formulario.valor} onChange={(event) => setFormulario({ ...formulario, valor: event.target.value })} required /></label>
                     {erroModal && <p className="production-error" role="alert">{erroModal}</p>}

@@ -5,11 +5,12 @@ import {
     atualizarStatusProducao,
     cadastrarProducao,
     excluirProducao,
+    listarClientes,
     listarProducao
 } from '../services/api';
 
 const FORMULARIO_INICIAL = {
-    cliente: '',
+    cliente_id: '',
     tipo_lamina: '',
     data: ''
 };
@@ -22,8 +23,9 @@ function formatarData(data) {
     return new Intl.DateTimeFormat('pt-BR', { timeZone: 'UTC' }).format(new Date(data));
 }
 
-function Producao() {
+function Producao({ onAbrirClientes }) {
     const [itens, setItens] = useState([]);
+    const [clientes, setClientes] = useState([]);
     const [formulario, setFormulario] = useState(FORMULARIO_INICIAL);
     const [modalAberto, setModalAberto] = useState(false);
     const [itemParaExcluir, setItemParaExcluir] = useState(null);
@@ -40,8 +42,9 @@ function Producao() {
         try {
             setCarregando(true);
             setErro('');
-            const dados = await listarProducao();
+            const [dados, clientesCadastrados] = await Promise.all([listarProducao(), listarClientes()]);
             setItens(Array.isArray(dados) ? dados : []);
+            setClientes(Array.isArray(clientesCadastrados) ? clientesCadastrados : []);
         } catch {
             setErro('Nao foi possivel carregar os itens de producao.');
         } finally {
@@ -56,8 +59,10 @@ function Producao() {
     }
 
     function abrirEdicao(item) {
+        const clienteCorrespondente = clientes.find((cliente) => cliente.id === Number(item.cliente_id))
+            || clientes.find((cliente) => cliente.nome.toLocaleLowerCase('pt-BR') === item.cliente.toLocaleLowerCase('pt-BR'));
         setFormulario({
-            cliente: item.cliente,
+            cliente_id: clienteCorrespondente?.id ? String(clienteCorrespondente.id) : '',
             tipo_lamina: item.tipo_lamina,
             data: item.data ? item.data.slice(0, 10) : ''
         });
@@ -213,16 +218,19 @@ function Producao() {
                             <button type="button" onClick={fecharModal} aria-label="Fechar"><X size={18} /></button>
                         </header>
 
-                        <label htmlFor="cliente">
+                        <label htmlFor="cliente-producao">
                             Cliente
-                            <input
-                                id="cliente"
-                                name="cliente"
-                                type="text"
-                                value={formulario.cliente}
+                            <select
+                                id="cliente-producao"
+                                name="cliente_id"
+                                value={formulario.cliente_id}
                                 onChange={atualizarCampo}
                                 required
-                            />
+                            >
+                                <option value="">Selecione um cliente</option>
+                                {clientes.map((cliente) => <option key={cliente.id} value={cliente.id}>{cliente.nome}</option>)}
+                            </select>
+                            {clientes.length === 0 && <button className="inline-client-button" type="button" onClick={() => { fecharModal(); onAbrirClientes?.(); }}>Cadastrar primeiro cliente</button>}
                         </label>
 
                         <label htmlFor="tipo_lamina">
