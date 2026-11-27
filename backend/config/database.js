@@ -10,8 +10,8 @@ const db = new Pool({
 
 module.exports = db;
 
-module.exports.emTransacao = async function emTransacao(operacao) {
-    const conexao = await db.connect();
+module.exports.emTransacao = async function emTransacao(operacao, banco = db) {
+    const conexao = await banco.connect();
     try {
         await conexao.query('BEGIN');
         const resultado = await operacao(conexao);

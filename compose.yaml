@@ -19,11 +19,14 @@ services:
     build: ./backend
     environment:
       PORT: 3000
+      HOST: 0.0.0.0
       DB_HOST: db
       DB_PORT: 5432
       DB_USER: ${POSTGRES_USER:-postgres}
       DB_PASSWORD: ${POSTGRES_PASSWORD:-gestao_local}
       DB_NAME: ${POSTGRES_DB:-gestao_servicos}
+      GESTAO_SENHA: ${GESTAO_SENHA:-}
+      GESTAO_SENHA_INICIAL: ${GESTAO_SENHA_INICIAL:-}
     depends_on:
       db:
         condition: service_healthy

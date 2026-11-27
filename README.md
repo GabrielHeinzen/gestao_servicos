@@ -9,13 +9,19 @@ Execute o instalador `Setup.exe` da versão para **Windows x64** e abra **Gestã
 ### Login local
 
 - Usuário `Gustavo Dums`
-- Senha `#12345`
+- Senha predefinida `#12345`
 
-O login fixo é validado na interface. Na versão desktop, a API e o PostgreSQL escutam apenas em `127.0.0.1`, e o Electron encaminha as chamadas à API com uma chave gerada a cada execução. A proteção dos arquivos depende das permissões no Windows. Consulte a [ADR-002](docs/adr/ADR-002-execucao-local.pdf) para entender os limites dessa configuração.
+Use essas credenciais para entrar diretamente. Não há cadastro público nem troca de senha na interface. Ao atualizar da versão 1.0.6, a senha personalizada é substituída pela predefinida, sem alterar os demais dados.
+
+A API valida o login, guarda apenas o hash da senha no PostgreSQL e limita as tentativas. Cada execução aceita uma sessão ativa por vez. A sessão termina ao sair, ao fechar o aplicativo ou após oito horas. **Lembrar usuário** guarda apenas o nome. A senha predefinida é para uso local e individual. É possível substituí-la com `GESTAO_SENHA` no ambiente do processo ou no `.env` do Compose.
+
+Na versão desktop, a API e o PostgreSQL escutam apenas em `127.0.0.1`, e o Electron encaminha as chamadas à API com uma chave gerada a cada execução. A proteção dos arquivos depende das permissões no Windows. Consulte a [ADR-002](docs/adr/ADR-002-execucao-local.pdf) para entender os limites dessa configuração.
 
 ### Dados e backups
 
 Os dados da versão desktop ficam em `%LOCALAPPDATA%\GestaoServicosDados` no perfil do usuário do Windows. Para fazer backup, feche o aplicativo e copie a pasta inteira. A base do Electron é separada do volume do Docker Compose. Para investigar falhas de inicialização do PostgreSQL, consulte `postgresql.log` nessa pasta, quando disponível.
+
+As migrações SQL em `backend/migrations/` são aplicadas antes de a API abrir, tanto no Electron quanto no ambiente web. Elas preservam os registros existentes e anotam cada versão em `migracoes_aplicadas`. Faça um backup antes de instalar uma atualização.
 
 ### Gerar o instalador
 
@@ -65,7 +71,7 @@ Para configurar portas ou credenciais, copie `.env.example` para `.env` na raiz.
 
 ### Com PostgreSQL local
 
-Use Node.js 22.12 ou superior e uma base PostgreSQL já criada. Instale as dependências a partir da raiz do repositório.
+Use Node.js 22.12 ou superior e uma base PostgreSQL **16 ou superior** já criada. O usuário do banco precisa de permissão para criar e alterar as tabelas do aplicativo. Instale as dependências a partir da raiz do repositório.
 
 ```powershell
 npm --prefix backend ci
@@ -74,7 +80,7 @@ npm --prefix frontend ci
 
 Configure `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD` e `DB_NAME` no terminal do backend para apontar para a sua base. Depois execute `npm --prefix backend run dev` nesse terminal e `npm --prefix frontend run dev` em outro.
 
-O Vite abre em `http://localhost:5173` e encaminha `/api` para `http://localhost:3000`. Verifique o backend em `http://localhost:3000/health`. A API prepara as tabelas no primeiro acesso às respectivas rotas.
+O Vite abre em `http://localhost:5173` e encaminha `/api` para `http://127.0.0.1:3000`. Verifique o backend em `http://127.0.0.1:3000/health`.
 
 ## Verificações do projeto
 
@@ -83,6 +89,8 @@ npm --prefix backend test
 npm --prefix frontend run lint
 npm --prefix frontend run build
 ```
+
+`npm --prefix backend run test:integracao` verifica o login, as migrações e a geração de romaneios usando PostgreSQL real. No Windows, com as dependências de `backend/` e `desktop/` instaladas, a suíte usa o PostgreSQL incluído no Electron e uma base temporária. Em outros ambientes, defina `GESTAO_TEST_DB_URL` para uma base de teste PostgreSQL 16+ com permissão para criar schemas. A suíte cria e remove schemas isolados.
 
 ## Decisões arquitetônicas
 

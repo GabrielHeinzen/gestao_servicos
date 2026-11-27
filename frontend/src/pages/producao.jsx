@@ -191,7 +191,7 @@ function Producao({ onAbrirClientes }) {
                 </button>
             </header>
 
-            <div className="production-table-wrap">
+            <div className="production-table-wrap content-enter">
                 <table className="production-table">
                     <thead>
                         <tr>

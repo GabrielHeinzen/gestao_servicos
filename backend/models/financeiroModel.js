@@ -1,83 +1,10 @@
 const db = require('../config/database');
-const clienteModel = require('./clienteModel');
 
 const TIPOS = ['romaneio', 'nf', 'despesa'];
-let tabelaPromise;
-
-async function prepararTabela() {
-    await clienteModel.garantirTabela();
-    await db.query(`
-        CREATE TABLE IF NOT EXISTS lancamentos_financeiros (
-            id SERIAL PRIMARY KEY,
-            tipo VARCHAR(12) NOT NULL CHECK (tipo IN ('romaneio', 'nf', 'despesa')),
-            numero_nf VARCHAR(80),
-            documento VARCHAR(120),
-            empresa VARCHAR(120) NOT NULL,
-            data DATE NOT NULL,
-            valor NUMERIC(14, 2) NOT NULL CHECK (valor > 0),
-            criado_em TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            CONSTRAINT campos_por_tipo CHECK (
-                (tipo = 'romaneio' AND numero_nf IS NULL AND documento IS NULL) OR
-                (tipo = 'nf' AND numero_nf IS NOT NULL AND documento IS NULL) OR
-                (tipo = 'despesa' AND numero_nf IS NULL AND documento IS NOT NULL)
-            )
-        );
-        ALTER TABLE lancamentos_financeiros
-            ADD COLUMN IF NOT EXISTS cliente_id INTEGER,
-            ADD COLUMN IF NOT EXISTS producao_id INTEGER,
-            ADD COLUMN IF NOT EXISTS romaneio_id INTEGER,
-            ADD COLUMN IF NOT EXISTS descricao VARCHAR(200),
-            ADD COLUMN IF NOT EXISTS conciliacao_legada BOOLEAN NOT NULL DEFAULT TRUE;
-        ALTER TABLE lancamentos_financeiros ALTER COLUMN conciliacao_legada SET DEFAULT FALSE;
-        CREATE UNIQUE INDEX IF NOT EXISTS lancamentos_producao_unica
-            ON lancamentos_financeiros (producao_id);
-        CREATE UNIQUE INDEX IF NOT EXISTS lancamentos_romaneio_unico
-            ON lancamentos_financeiros (romaneio_id);
-        CREATE UNIQUE INDEX IF NOT EXISTS lancamentos_romaneio_referencia
-            ON lancamentos_financeiros (id, cliente_id, valor);
-        DO $$
-        BEGIN
-            IF NOT EXISTS (
-                SELECT 1 FROM pg_constraint
-                WHERE conname = 'lancamentos_cliente_fk'
-            ) THEN
-                ALTER TABLE lancamentos_financeiros
-                    ADD CONSTRAINT lancamentos_cliente_fk
-                    FOREIGN KEY (cliente_id) REFERENCES clientes_empresas(id) ON DELETE RESTRICT;
-            END IF;
-            IF NOT EXISTS (
-                SELECT 1 FROM pg_constraint
-                WHERE conname = 'lancamentos_romaneio_fk'
-                    AND conrelid = 'lancamentos_financeiros'::regclass
-            ) THEN
-                ALTER TABLE lancamentos_financeiros
-                    ADD CONSTRAINT lancamentos_romaneio_fk
-                    FOREIGN KEY (romaneio_id, cliente_id, valor)
-                    REFERENCES lancamentos_financeiros (id, cliente_id, valor)
-                    ON DELETE SET NULL (romaneio_id),
-                    ADD CONSTRAINT lancamentos_romaneio_somente_nf
-                    CHECK (romaneio_id IS NULL OR (tipo = 'nf' AND cliente_id IS NOT NULL AND romaneio_id <> id));
-            END IF;
-        END $$;
-    `);
-}
-
-function garantirTabela() {
-    if (!tabelaPromise) {
-        tabelaPromise = prepararTabela().catch((erro) => {
-            tabelaPromise = null;
-            throw erro;
-        });
-    }
-
-    return tabelaPromise;
-}
-
 const COLUNAS = `id, tipo, cliente_id, producao_id, romaneio_id, conciliacao_legada, numero_nf, descricao, documento, empresa,
     TO_CHAR(data, 'YYYY-MM-DD') AS data, valor, criado_em`;
 
 async function listar(tipo) {
-    await garantirTabela();
     const parametros = tipo ? [tipo] : [];
     const filtro = tipo ? 'WHERE tipo = $1' : '';
     const resultado = await db.query(
@@ -112,7 +39,6 @@ async function comVinculoRomaneio(item, operacao) {
 }
 
 async function criar(item) {
-    await garantirTabela();
     return comVinculoRomaneio(item, async (conexao, romaneio) => {
         await identificarRomaneioLegado(conexao, romaneio, item.cliente_id);
         const resultado = await conexao.query(
@@ -150,7 +76,6 @@ async function atualizarDados(conexao, id, item) {
 }
 
 async function atualizar(id, item) {
-    await garantirTabela();
     if (item.tipo !== 'romaneio') {
         return comVinculoRomaneio(item, async (conexao, romaneio) => {
             if (romaneio?.cliente_id === null) {
@@ -193,7 +118,6 @@ async function atualizar(id, item) {
 }
 
 async function excluir(id) {
-    await garantirTabela();
     const resultado = await db.query(
         'DELETE FROM lancamentos_financeiros WHERE id = $1 AND producao_id IS NULL RETURNING id',
         [id]
@@ -210,7 +134,6 @@ async function vinculadoAProducao(id) {
 }
 
 async function relatorio(ano) {
-    await garantirTabela();
     const resultado = await db.query(
         `SELECT tipo, cliente_id, empresa, TO_CHAR(data, 'YYYY-MM-DD') AS data, valor, conciliacao_legada,
                 EXISTS (SELECT 1 FROM lancamentos_financeiros nf WHERE nf.romaneio_id = l.id) AS vinculado_a_nf
@@ -222,4 +145,4 @@ async function relatorio(ano) {
     return resultado.rows;
 }
 
-module.exports = { TIPOS, garantirTabela, listar, criar, atualizar, excluir, vinculadoAProducao, relatorio };
+module.exports = { TIPOS, listar, criar, atualizar, excluir, vinculadoAProducao, relatorio };

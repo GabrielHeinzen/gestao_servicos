@@ -213,7 +213,7 @@ function Lancamentos({ tipo, onTipoChange, onAbrirClientes }) {
                 </div>
             )}
 
-            <div key={tipo} className={`finance-tab-content finance-tab-content--${tipo}`}>
+            <div key={tipo} className={`finance-tab-content finance-tab-content--${tipo} content-enter`}>
                 <div className="finance-summary">
                     <div>
                         <span>Total mensal em {receita ? TIPOS[tipo].titulo.toLowerCase() : 'despesas'}</span>

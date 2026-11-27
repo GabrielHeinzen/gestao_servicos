@@ -29,7 +29,7 @@ async function iniciarServidor(pastaDados, binarios) {
     try {
         const api = require('./runtime/backend/app');
         db = require('./runtime/backend/config/database');
-        await db.query('SELECT 1');
+        await api.prepararBanco();
 
         const chave = randomBytes(32).toString('hex');
         const aplicacao = express();

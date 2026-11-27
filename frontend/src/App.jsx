@@ -1,13 +1,13 @@
 import './App.css';
-import { useState } from 'react';
-import { ChartNoAxesCombined, Eye, EyeOff, Factory, LockKeyhole, LogOut, Receipt, UserRound, UsersRound, Wallet } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { ChartNoAxesCombined, Factory, LogOut, Receipt, UserRound, UsersRound, Wallet } from 'lucide-react';
 import Producao from './pages/producao';
 import Lancamentos from './pages/lancamentos';
 import Relatorios from './pages/relatorios';
 import Clientes from './pages/clientes';
+import CampoSenha from './components/campoSenha';
+import { descartarSessao, entrar, sair } from './services/api';
 
-const USUARIO_PADRAO = 'Gustavo Dums';
-const SENHA_PADRAO = '#12345';
 const OPCOES_MENU = [
     {
         id: 'servicos',
@@ -37,30 +37,63 @@ const OPCOES_MENU = [
 ];
 
 function App() {
-    const [estaAutenticado, setEstaAutenticado] = useState(false);
+    const [sessao, setSessao] = useState(null);
     const [usuario, setUsuario] = useState(() => localStorage.getItem('gestao_servicos_usuario') || '');
     const [senha, setSenha] = useState('');
-    const [mostrarSenha, setMostrarSenha] = useState(false);
     const [erroLogin, setErroLogin] = useState('');
+    const [ocupado, setOcupado] = useState(false);
     const [lembrar, setLembrar] = useState(() => Boolean(localStorage.getItem('gestao_servicos_usuario')));
     const [menuAtivo, setMenuAtivo] = useState(OPCOES_MENU[0].id);
     const [tipoFinanceiro, setTipoFinanceiro] = useState('romaneio');
 
-    function handleLogin(event) {
-        event.preventDefault();
-
-        if (usuario.trim() !== USUARIO_PADRAO || senha !== SENHA_PADRAO) {
-            setErroLogin('Usuario ou senha incorretos.');
-            return;
+    useEffect(() => {
+        function aoExpirar() {
+            descartarSessao();
+            setSessao(null);
+            setErroLogin('Sua sessão terminou. Entre novamente.');
         }
+        window.addEventListener('gestao:sessao-expirada', aoExpirar);
+        const prazo = sessao ? window.setTimeout(aoExpirar, Math.max(0, sessao.expiraEm - Date.now())) : undefined;
+        return () => {
+            window.clearTimeout(prazo);
+            window.removeEventListener('gestao:sessao-expirada', aoExpirar);
+        };
+    }, [sessao]);
 
+    async function handleLogin(event) {
+        event.preventDefault();
+        if (ocupado) return;
+        setOcupado(true);
         setErroLogin('');
-        if (lembrar) localStorage.setItem('gestao_servicos_usuario', usuario.trim());
-        else localStorage.removeItem('gestao_servicos_usuario');
-        setEstaAutenticado(true);
+        try {
+            const autenticado = await entrar(usuario.trim(), senha);
+            if (lembrar) localStorage.setItem('gestao_servicos_usuario', autenticado.usuario);
+            else localStorage.removeItem('gestao_servicos_usuario');
+            setSenha('');
+            setSessao(autenticado);
+        } catch (erro) {
+            setErroLogin(erro.message);
+        } finally {
+            setOcupado(false);
+        }
     }
 
-    if (!estaAutenticado) {
+    async function handleLogout() {
+        if (ocupado) return;
+        setOcupado(true);
+        try {
+            await sair();
+        } catch {
+            // O cliente descarta o token mesmo se a API estiver indisponível.
+        } finally {
+            setSessao(null);
+            setMenuAtivo('servicos');
+            setErroLogin('');
+            setOcupado(false);
+        }
+    }
+
+    if (!sessao) {
         return (
             <main className="login-page">
                 <form className="login-card" onSubmit={handleLogin}>
@@ -88,40 +121,16 @@ function App() {
                         />
                     </div>
 
-                    <div className="login-field">
-                        <label htmlFor="senha">Senha</label>
-                        <div className="password-input">
-                            <LockKeyhole className="field-icon" size={18} aria-hidden="true" />
-                            <input
-                                id="senha"
-                                name="senha"
-                                type={mostrarSenha ? 'text' : 'password'}
-                                placeholder="Senha"
-                                value={senha}
-                                onChange={(event) => setSenha(event.target.value)}
-                                autoComplete="current-password"
-                                required
-                            />
-                            <button
-                                className="password-toggle"
-                                type="button"
-                                onClick={() => setMostrarSenha((valorAtual) => !valorAtual)}
-                                aria-label={mostrarSenha ? 'Ocultar senha' : 'Mostrar senha'}
-                                title={mostrarSenha ? 'Ocultar senha' : 'Mostrar senha'}
-                            >
-                                {mostrarSenha ? <EyeOff size={18} aria-hidden="true" /> : <Eye size={18} aria-hidden="true" />}
-                            </button>
-                        </div>
-                    </div>
+                    <CampoSenha id="senha" rotulo="Senha" autoComplete="current-password" value={senha} onChange={setSenha} />
 
                     <label className="remember-option">
                         <input type="checkbox" checked={lembrar} onChange={(event) => setLembrar(event.target.checked)} />
                         <span>Lembrar usuário</span>
                     </label>
 
-                    {erroLogin && <p className="login-error">{erroLogin}</p>}
+                    {erroLogin && <p className="login-error" role="alert">{erroLogin}</p>}
 
-                    <button className="login-button" type="submit">Entrar</button>
+                    <button className="login-button" type="submit" disabled={ocupado}>{ocupado ? 'Entrando...' : 'Entrar'}</button>
                 </form>
             </main>
         );
@@ -154,8 +163,8 @@ function App() {
                     ))}
                 </nav>
                 <div className="sidebar-footer">
-                    <div className="sidebar-user"><span className="sidebar-user-avatar">GD</span><span>Gustavo Dums</span></div>
-                    <button type="button" className="logout-button" onClick={() => { setEstaAutenticado(false); setSenha(''); setMenuAtivo('servicos'); }} title="Sair" aria-label="Sair"><LogOut size={18} /></button>
+                    <div className="sidebar-user"><span className="sidebar-user-avatar">GD</span><span>{sessao.usuario}</span></div>
+                    <button type="button" className="logout-button" onClick={handleLogout} disabled={ocupado} title="Sair" aria-label="Sair"><LogOut size={18} /></button>
                 </div>
             </aside>
 

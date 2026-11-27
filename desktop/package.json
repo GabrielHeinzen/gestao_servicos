@@ -1,7 +1,7 @@
 {
   "name": "gestao-servicos",
   "productName": "Gestão de Serviços",
-  "version": "1.0.5",
+  "version": "1.0.8",
   "description": "Sistema local de produção e gestão financeira.",
   "author": "Gustavo Dums",
   "private": true,
@@ -17,7 +17,6 @@
     "make": "node scripts/empacotar.cjs"
   },
   "dependencies": {
-    "cors": "^2.8.6",
     "electron-squirrel-startup": "^1.0.1",
     "express": "^5.2.1",
     "pg": "^8.23.0"

@@ -85,12 +85,12 @@ function Clientes() {
                 <button className="add-item-button" type="button" onClick={abrirNovo}><Plus size={18} /> Adicionar cliente</button>
             </header>
 
-            <div className="clients-summary">
+            <div className="clients-summary content-enter">
                 <span className="metric-icon revenue"><Building2 size={20} /></span>
                 <div><span>Clientes cadastrados</span><strong>{clientes.length}</strong></div>
             </div>
 
-            <div className="list-heading">
+            <div className="list-heading content-enter">
                 <h2>Empresas</h2>
                 <label className="search-box">
                     <Search size={17} aria-hidden="true" />
@@ -99,7 +99,7 @@ function Clientes() {
                 </label>
             </div>
 
-            <div className="production-table-wrap clients-table-wrap">
+            <div className="production-table-wrap clients-table-wrap content-enter">
                 <table className="production-table clients-table">
                     <thead><tr><th>Nome da empresa</th><th>Ações</th></tr></thead>
                     <tbody>

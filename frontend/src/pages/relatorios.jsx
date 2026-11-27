@@ -132,7 +132,7 @@ function Relatorios() {
 
         {carregando && <p className="report-state">Carregando relatorios...</p>}
         {erro && <p className="production-error" role="alert">{erro}</p>}
-        {!carregando && dados && <div key={tipo} className="report-content">
+        {!carregando && dados && <div key={tipo} className="report-content content-enter">
             {tipo === 'geral' ? <>
                 <div className="report-period-title"><h2>Resumo mensal</h2><span>{MESES_COMPLETOS[mes - 1]} de {ano}</span></div>
                 <div className="report-metrics">
