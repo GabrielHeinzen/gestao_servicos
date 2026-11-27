@@ -1,29 +1,25 @@
-# Gestao de Servicos
+# Gestão de Serviços
 
-Sistema local para acompanhar a producao e os lancamentos financeiros de uma empresa. A interface foi feita para uso em computador, com acesso por login fixo e sem criacao de contas.
-
-## O que faz
-
-- **Producao:** cadastro de lotes com cliente, tipo de lamina e data; edicao, exclusao com confirmacao e status `Em producao`, `Pronto` ou `Coletado`.
-- **Clientes:** cadastro das empresas pelo nome para uso nos lancamentos financeiros.
-- **Financeiro:** registro de romaneios e notas fiscais (NF) vinculados aos clientes cadastrados.
-- **Gastos / Despesas:** registro de documento, empresa, data e valor.
-- **Relatorios:** visoes separadas de NF, Romaneio e Geral, com graficos mensais e anuais.
-
-No cadastro ou na edicao de uma NF, o campo opcional de romaneio sugere os lancamentos disponiveis do mesmo cliente e valor, com as respectivas datas. No relatorio Geral, o valor de um par vinculado entra uma vez, na data da NF. Os relatorios separados mostram cada documento na propria data. Os registros feitos antes da atualizacao mantem a comparacao por cliente, data e valor ate a revisao do vinculo.
-
-## Tecnologias
-
-- Frontend: React, Vite e Nginx (na imagem Docker).
-- Backend: Node.js, Express e `pg`.
-- Banco: PostgreSQL 16.
-- Execucao conjunta: Docker Compose.
+Aplicativo de uso local para acompanhar serviços em produção e administrar clientes, romaneios, notas fiscais, despesas e relatórios financeiros.
 
 ## Aplicativo Windows sem Docker
 
-A versao desktop para Windows x64 inclui a interface, a API e um PostgreSQL local. Na primeira abertura, o aplicativo cria uma base vazia em `%LOCALAPPDATA%\GestaoServicosDados`. Nas proximas aberturas, usa os dados desse diretorio. O banco do Compose e separado.
+Execute o instalador `Setup.exe` da versão para **Windows x64** e abra **Gestão de Serviços** pelo menu Iniciar. O aplicativo já inclui a interface React, a API Express e o PostgreSQL 16. Na primeira abertura, ele cria uma base de dados vazia. O Electron inicia a API e o banco ao abrir o aplicativo e os encerra ao fechar.
 
-Para gerar o instalador em uma maquina Windows x64 com Node.js 22+, execute na raiz do projeto:
+### Login local
+
+- Usuário `Gustavo Dums`
+- Senha `#12345`
+
+O login fixo é validado na interface. Na versão desktop, a API e o PostgreSQL escutam apenas em `127.0.0.1`, e o Electron encaminha as chamadas à API com uma chave gerada a cada execução. A proteção dos arquivos depende das permissões no Windows. Consulte a [ADR-002](docs/adr/ADR-002-execucao-local.pdf) para entender os limites dessa configuração.
+
+### Dados e backups
+
+Os dados da versão desktop ficam em `%LOCALAPPDATA%\GestaoServicosDados` no perfil do usuário do Windows. Para fazer backup, feche o aplicativo e copie a pasta inteira. A base do Electron é separada do volume do Docker Compose. Para investigar falhas de inicialização do PostgreSQL, consulte `postgresql.log` nessa pasta, quando disponível.
+
+### Gerar o instalador
+
+Em uma máquina Windows x64 com **Node.js 22.12 ou superior** e npm, use os comandos abaixo na raiz do repositório.
 
 ```powershell
 npm --prefix frontend ci
@@ -31,90 +27,75 @@ npm --prefix desktop ci
 npm --prefix desktop run make
 ```
 
-O instalador `Setup.exe` e gerado em `desktop/out/make`. Para abrir a versao de desenvolvimento, use `npm --prefix desktop start`. O aplicativo gerencia o PostgreSQL local durante a execucao e usa a mesma tela de login. Guarde a pasta de dados ao fazer backup ou trocar de computador.
+O Electron Forge gera o `Setup.exe` em `desktop/out/make/squirrel.windows/x64/`. O build padrão gera um instalador sem assinatura digital. Para abrir a versão desktop em desenvolvimento após instalar as dependências, execute `npm --prefix desktop start`.
 
-## Como rodar com Docker
+## O que faz
 
-Instale o [Docker Desktop](https://www.docker.com/products/docker-desktop/) e deixe-o aberto. No terminal, na raiz deste repositorio, execute:
+- **Produção** permite cadastrar serviços com cliente, tipo de lâmina, data e observações. O status **Atrasado** aparece no oitavo dia útil após a data do serviço. A contagem considera segunda a sexta, sem descontar feriados. É possível marcar o serviço como **Pronto**, **Coletado** ou **Cancelado**.
+- **Clientes** reúne os cadastros de empresas usados na Produção e nos lançamentos financeiros.
+- **Financeiro** reúne romaneios e notas fiscais. Ao marcar um serviço como **Pronto**, o aplicativo pede o valor final, mostra esse valor na Produção e cria um romaneio automático com a data da conclusão. Reabrir ou cancelar o serviço retira o romaneio automático do faturamento.
+- Em **Gastos e despesas**, cada lançamento registra documento, empresa, data de compra e valor.
+- Os **relatórios** têm visões de NF, Romaneio e Geral, com gráficos mensais e anuais. A visão Geral inclui faturamento, despesas e lucro.
+
+### Vínculo entre romaneio e NF
+
+Ao cadastrar ou editar uma nota fiscal, o campo **Romaneio vinculado** sugere os romaneios disponíveis do mesmo cliente e valor, mostrando suas datas. Uma NF avulsa pode ser registrada com o campo em branco.
+
+No relatório **Geral**, o par vinculado entra uma vez, na data da NF, inclusive quando os documentos foram lançados em meses ou anos diferentes. Os relatórios separados mostram cada documento na própria data. Os registros anteriores à atualização mantêm a comparação por cliente, data e valor até a revisão do vínculo. Veja a [ADR-001](docs/adr/ADR-001-vinculo-romaneio-nf.pdf).
+
+## Desenvolvimento web
+
+### Com Docker Compose
+
+Abra o [Docker Desktop](https://www.docker.com/products/docker-desktop/) e suba os serviços a partir da raiz do repositório.
 
 ```powershell
 docker compose up --build -d
 ```
 
-Abra **http://localhost:5173**. O primeiro build pode levar alguns minutos. O Compose inicia PostgreSQL, API e interface nessa ordem e so libera a interface quando a API consegue consultar o banco.
-
-Comandos uteis:
+A interface fica em `http://localhost:5173`. O Nginx encaminha `/api` à API dentro da rede do Compose. O PostgreSQL fica disponível na porta **5433** da própria máquina. Os dados persistem no volume `postgres_data` após `docker compose down`.
 
 ```powershell
-docker compose ps              # Ver estado dos servicos
-docker compose logs -f         # Acompanhar logs
-docker compose down            # Parar sem apagar os dados
-docker compose up --build -d   # Recriar apos alterar o codigo
+docker compose ps
+docker compose logs -f
+docker compose down
 ```
 
-Os dados ficam no volume `postgres_data` do Compose e **continuam salvos** depois de `docker compose down`. Nao use `docker compose down -v` se quiser preserva-los.
+Para configurar portas ou credenciais, copie `.env.example` para `.env` na raiz. Use `APP_PORT` e `POSTGRES_PORT` para resolver conflitos de porta. As variáveis `POSTGRES_USER`, `POSTGRES_PASSWORD` e `POSTGRES_DB` configuram a criação da base. Alterar essas variáveis após a criação do volume exige ajustar as credenciais no PostgreSQL. O endpoint `http://localhost:5173/api/health` verifica a conexão da API com o banco.
 
-### Portas e configuracao
+### Com PostgreSQL local
 
-Por padrao, a interface usa a porta **5173**. O PostgreSQL fica disponivel na porta **5433**, acessivel apenas pela propria maquina onde o projeto estiver rodando. A API e acessada pelo frontend em `/api` e nao precisa de uma porta publica propria.
-
-Para mudar as portas ou as credenciais de desenvolvimento, copie `.env.example` para `.env` na raiz e edite os valores antes de subir os servicos:
+Use Node.js 22.12 ou superior e uma base PostgreSQL já criada. Instale as dependências a partir da raiz do repositório.
 
 ```powershell
-Copy-Item .env.example .env
+npm --prefix backend ci
+npm --prefix frontend ci
 ```
 
-Variaveis disponiveis: `APP_PORT`, `POSTGRES_PORT`, `POSTGRES_USER`, `POSTGRES_PASSWORD` e `POSTGRES_DB`. Depois de alterar `.env`, rode `docker compose up -d`. Se o volume ja tiver sido criado, mudar usuario, senha ou nome do banco no `.env` **nao** modifica automaticamente as credenciais armazenadas no PostgreSQL; use as credenciais originais ou configure a alteracao dentro do banco.
+Configure `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD` e `DB_NAME` no terminal do backend para apontar para a sua base. Depois execute `npm --prefix backend run dev` nesse terminal e `npm --prefix frontend run dev` em outro.
 
-> O Compose cria um banco e volume proprios. Dados de um PostgreSQL antigo ou de outro container nao aparecem automaticamente aqui. Nao apague o banco anterior antes de migrar seus dados.
+O Vite abre em `http://localhost:5173` e encaminha `/api` para `http://localhost:3000`. Verifique o backend em `http://localhost:3000/health`. A API prepara as tabelas no primeiro acesso às respectivas rotas.
 
-## Login
-
-- Usuario: `Gustavo Dums`
-- Senha: `#12345`
-
-O login atual e fixo no frontend e serve apenas para o uso local previsto neste projeto. Ele **nao** e uma autenticacao segura para publicar o sistema na internet; nao exponha a aplicacao ou o banco externamente sem implementar autenticacao no backend e revisar a seguranca.
-
-## Desenvolvimento sem Docker
-
-Requer Node.js 22+ e PostgreSQL ativo. Instale as dependencias em dois terminais:
+## Verificações do projeto
 
 ```powershell
-cd backend
-npm ci
+npm --prefix backend test
+npm --prefix frontend run lint
+npm --prefix frontend run build
 ```
 
-```powershell
-cd frontend
-npm ci
-```
+## Decisões arquitetônicas
 
-Configure `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD` e `DB_NAME` para o banco desejado; sem variaveis, o backend tenta `localhost:5432`, usuario `postgres`, senha `gestao_local` e banco `gestao_servicos`. Se usar somente o banco do Compose, ele esta em `localhost:5433`. Inicie o backend e o frontend em terminais separados:
-
-```powershell
-cd backend
-npm run dev
-```
-
-```powershell
-cd frontend
-npm run dev
-```
-
-O Vite abre em **http://localhost:5173** e encaminha `/api` para o backend em `localhost:3000`. Para verificar a conexao da API com o banco, acesse **http://localhost:3000/health**. As tabelas de producao e financeiro sao criadas automaticamente no primeiro acesso as respectivas rotas; nao ha comando de migracao ou seed neste projeto.
-
-## Problemas comuns
-
-- **Docker nao inicia:** confirme que o Docker Desktop esta aberto e execute `docker compose ps`.
-- **Porta 5173 ou 5433 ocupada:** altere `APP_PORT` ou `POSTGRES_PORT` no `.env` e suba novamente. A URL da interface passa a usar o novo `APP_PORT`.
-- **Tela sem dados:** confira `docker compose logs backend db` e `docker compose ps`. O endpoint `http://localhost:5173/api/health` deve responder com `{"status":"ok"}`.
-- **Dados antigos nao aparecem:** o Compose usa um volume separado. E necessario exportar/importar os dados do banco anterior para este banco.
+- [ADR-001 · Vínculo entre romaneio e nota fiscal](docs/adr/ADR-001-vinculo-romaneio-nf.pdf)
+- [ADR-002 · Execução local com Electron](docs/adr/ADR-002-execucao-local.pdf)
 
 ## Estrutura
 
 ```text
-backend/       API Express e modelos PostgreSQL
-frontend/      Interface React/Vite
-compose.yaml   Orquestracao dos tres servicos
-.env.example   Opcoes de portas e banco
+frontend/      Interface React compilada com Vite
+backend/       API Express e acesso ao PostgreSQL com pg
+desktop/       Aplicativo Electron e empacotamento para Windows
+docs/adr/      Registros de decisão arquitetônica em PDF
+compose.yaml   Ambiente web local com Docker Compose e Nginx
+.env.example   Configuração de exemplo para o Compose
 ```
