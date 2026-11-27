@@ -8,20 +8,14 @@ import {
     listarClientes,
     listarProducao
 } from '../services/api';
+import { formatarData, formatarMoeda } from '../utils/formatacao';
 
 const FORMULARIO_INICIAL = {
     cliente_id: '',
     tipo_lamina: '',
-    data: ''
+    data: '',
+    observacao: ''
 };
-
-function formatarData(data) {
-    if (!data) {
-        return '-';
-    }
-
-    return new Intl.DateTimeFormat('pt-BR', { timeZone: 'UTC' }).format(new Date(data));
-}
 
 function Producao({ onAbrirClientes }) {
     const [itens, setItens] = useState([]);
@@ -30,13 +24,33 @@ function Producao({ onAbrirClientes }) {
     const [modalAberto, setModalAberto] = useState(false);
     const [itemParaExcluir, setItemParaExcluir] = useState(null);
     const [itemEditando, setItemEditando] = useState(null);
+    const [alteracaoPendente, setAlteracaoPendente] = useState(null);
+    const [valorFinal, setValorFinal] = useState('');
     const [carregando, setCarregando] = useState(true);
     const [salvando, setSalvando] = useState(false);
     const [erro, setErro] = useState('');
+    const [erroModal, setErroModal] = useState('');
 
     useEffect(() => {
         carregarItens();
     }, []);
+
+    useEffect(() => {
+        if (carregando || salvando) return;
+        let ativo = true;
+        const intervalo = window.setInterval(async () => {
+            try {
+                const dados = await listarProducao();
+                if (ativo) setItens(dados);
+            } catch {
+                // A atualizacao automatica mantem a ultima lista disponivel.
+            }
+        }, 60_000);
+        return () => {
+            ativo = false;
+            window.clearInterval(intervalo);
+        };
+    }, [carregando, salvando]);
 
     async function carregarItens() {
         try {
@@ -55,6 +69,7 @@ function Producao({ onAbrirClientes }) {
     function abrirCadastro() {
         setFormulario(FORMULARIO_INICIAL);
         setItemEditando(null);
+        setErroModal('');
         setModalAberto(true);
     }
 
@@ -64,9 +79,11 @@ function Producao({ onAbrirClientes }) {
         setFormulario({
             cliente_id: clienteCorrespondente?.id ? String(clienteCorrespondente.id) : '',
             tipo_lamina: item.tipo_lamina,
-            data: item.data ? item.data.slice(0, 10) : ''
+            data: item.data ? item.data.slice(0, 10) : '',
+            observacao: item.observacao || ''
         });
         setItemEditando(item);
+        setErroModal('');
         setModalAberto(true);
     }
 
@@ -89,7 +106,7 @@ function Producao({ onAbrirClientes }) {
 
         try {
             setSalvando(true);
-            setErro('');
+            setErroModal('');
 
             if (itemEditando) {
                 await atualizarProducao(itemEditando.id, formulario);
@@ -99,20 +116,36 @@ function Producao({ onAbrirClientes }) {
 
             fecharModal();
             await carregarItens();
-        } catch {
-            setErro('Nao foi possivel salvar o item.');
+        } catch (falha) {
+            setErroModal(falha.message);
         } finally {
             setSalvando(false);
         }
     }
 
-    async function alterarStatus(item, status) {
+    function escolherStatus(item, status) {
+        if (status === 'Pronto' || (item.valor_final && (status === 'Cancelado' || status === 'Em produção'))) {
+            setValorFinal(item.valor_final || '');
+            setErroModal('');
+            setAlteracaoPendente({ item, status });
+            return;
+        }
+        alterarStatus(item, status);
+    }
+
+    async function alterarStatus(item, status, valor) {
+        setSalvando(true);
+        setErro('');
+        setErroModal('');
         try {
-            setErro('');
-            await atualizarStatusProducao(item.id, status);
+            await atualizarStatusProducao(item.id, status, valor);
+            setAlteracaoPendente(null);
             await carregarItens();
-        } catch {
-            setErro('Nao foi possivel atualizar o status.');
+        } catch (falha) {
+            if (alteracaoPendente) setErroModal(falha.message);
+            else setErro(falha.message);
+        } finally {
+            setSalvando(false);
         }
     }
 
@@ -122,14 +155,20 @@ function Producao({ onAbrirClientes }) {
         }
 
         try {
-            setErro('');
+            setSalvando(true);
+            setErroModal('');
             await excluirProducao(itemParaExcluir.id);
             setItemParaExcluir(null);
             await carregarItens();
-        } catch {
-            setErro('Nao foi possivel excluir o item.');
+        } catch (falha) {
+            setErroModal(falha.message);
+        } finally {
+            setSalvando(false);
         }
     }
+
+    const marcandoPronto = alteracaoPendente?.status === 'Pronto';
+    const cancelando = alteracaoPendente?.status === 'Cancelado';
 
     return (
         <section className="production-page">
@@ -152,20 +191,21 @@ function Producao({ onAbrirClientes }) {
                             <th>Cliente</th>
                             <th>Tipo Lâmina</th>
                             <th>Data</th>
-                            <th>Status</th>
-                            <th>Ações</th>
+                            <th className="production-status-column">Status</th>
+                            <th className="production-value-column">Valor final</th>
+                            <th className="production-actions-column">Ações</th>
                         </tr>
                     </thead>
                     <tbody>
                         {carregando && (
                             <tr>
-                                <td colSpan="5" className="empty-row">Carregando produção...</td>
+                                <td colSpan="6" className="empty-row">Carregando produção...</td>
                             </tr>
                         )}
 
                         {!carregando && itens.length === 0 && (
                             <tr>
-                                <td colSpan="5" className="empty-row">Nenhum item cadastrado.</td>
+                                <td colSpan="6" className="empty-row">Nenhum item cadastrado.</td>
                             </tr>
                         )}
 
@@ -179,22 +219,27 @@ function Producao({ onAbrirClientes }) {
                                         {item.status}
                                     </span>
                                 </td>
+                                <td className="money-cell">
+                                    {item.valor_final == null ? '-' : formatarMoeda(item.valor_final)}
+                                </td>
                                 <td>
                                     <div className="row-actions">
                                         <details className="actions-menu">
                                             <summary>Opções</summary>
                                             <div className="actions-list">
-                                                <button type="button" onClick={() => abrirEdicao(item)}>Editar</button>
-                                                <button type="button" onClick={() => alterarStatus(item, 'Em produção')}>Em produção</button>
-                                                <button type="button" onClick={() => alterarStatus(item, 'Pronto')}>Pronto</button>
-                                                <button type="button" onClick={() => alterarStatus(item, 'Coletado')}>Coletado</button>
+                                                <button type="button" disabled={salvando} onClick={() => abrirEdicao(item)}>Editar</button>
+                                                <button type="button" disabled={salvando} onClick={() => escolherStatus(item, 'Em produção')}>Em produção</button>
+                                                <button type="button" disabled={salvando} onClick={() => escolherStatus(item, 'Pronto')}>Pronto</button>
+                                                <button type="button" disabled={salvando} onClick={() => escolherStatus(item, 'Coletado')}>Coletado</button>
+                                                <button type="button" disabled={salvando} onClick={() => escolherStatus(item, 'Cancelado')}>Cancelado</button>
                                             </div>
                                         </details>
 
                                         <button
                                             className="delete-item-button"
                                             type="button"
-                                            onClick={() => setItemParaExcluir(item)}
+                                            onClick={() => { setErroModal(''); setItemParaExcluir(item); }}
+                                            disabled={salvando}
                                             aria-label={`Excluir item de ${item.cliente}`}
                                             title="Excluir"
                                         >
@@ -208,14 +253,14 @@ function Producao({ onAbrirClientes }) {
                 </table>
             </div>
 
-            {erro && <p className="production-error">{erro}</p>}
+            {erro && <p className="production-error" role="alert">{erro}</p>}
 
             {modalAberto && (
                 <div className="modal-backdrop" role="presentation">
-                    <form className="item-modal" onSubmit={salvarItem}>
+                    <form className="item-modal production-modal" onSubmit={salvarItem} role="dialog" aria-modal="true" aria-labelledby="production-modal-title">
                         <header>
-                            <h2>{itemEditando ? 'Editar item' : 'Adicionar item'}</h2>
-                            <button type="button" onClick={fecharModal} aria-label="Fechar"><X size={18} /></button>
+                            <h2 id="production-modal-title">{itemEditando ? 'Editar item' : 'Adicionar item'}</h2>
+                            <button type="button" onClick={fecharModal} disabled={salvando} aria-label="Fechar"><X size={18} /></button>
                         </header>
 
                         <label htmlFor="cliente-producao">
@@ -257,10 +302,49 @@ function Producao({ onAbrirClientes }) {
                             />
                         </label>
 
+                        <label htmlFor="observacao">
+                            Descrição / Observação
+                            <textarea id="observacao" name="observacao" rows={3} maxLength={2000}
+                                value={formulario.observacao} onChange={atualizarCampo} />
+                        </label>
+
+                        {erroModal && <p className="production-error" role="alert">{erroModal}</p>}
                         <footer>
-                            <button className="secondary-button" type="button" onClick={fecharModal}>Cancelar</button>
+                            <button className="secondary-button" type="button" onClick={fecharModal} disabled={salvando}>Cancelar</button>
                             <button className="primary-button" type="submit" disabled={salvando}>
                                 {salvando ? 'Salvando...' : 'Salvar'}
+                            </button>
+                        </footer>
+                    </form>
+                </div>
+            )}
+
+            {alteracaoPendente && (
+                <div className="modal-backdrop" role="presentation">
+                    <form className="item-modal production-modal" role="dialog" aria-modal="true"
+                        aria-labelledby="status-modal-title" onSubmit={(event) => {
+                            event.preventDefault();
+                            alterarStatus(alteracaoPendente.item, alteracaoPendente.status, marcandoPronto ? Number(valorFinal) : undefined);
+                        }}>
+                        <header>
+                            <h2 id="status-modal-title">{marcandoPronto ? 'Marcar como pronto' : cancelando ? 'Cancelar serviço?' : 'Reabrir serviço?'}</h2>
+                            <button type="button" aria-label="Fechar" disabled={salvando} onClick={() => setAlteracaoPendente(null)}><X size={18} /></button>
+                        </header>
+                        {marcandoPronto ? (
+                            <label htmlFor="valor-final">
+                                Valor final (R$)
+                                <input id="valor-final" type="number" inputMode="decimal" step="0.01"
+                                    min="0.01" max="999999999999.99" required autoFocus value={valorFinal}
+                                    onChange={(event) => setValorFinal(event.target.value)} />
+                            </label>
+                        ) : (
+                            <p>O romaneio automático de {alteracaoPendente.item.cliente} será retirado do faturamento.</p>
+                        )}
+                        {erroModal && <p className="production-error" role="alert">{erroModal}</p>}
+                        <footer>
+                            <button className="secondary-button" type="button" disabled={salvando} onClick={() => setAlteracaoPendente(null)}>Voltar</button>
+                            <button className={cancelando ? 'danger-button' : 'primary-button'} type="submit" disabled={salvando}>
+                                {salvando ? 'Salvando...' : 'Confirmar'}
                             </button>
                         </footer>
                     </form>
@@ -273,12 +357,14 @@ function Producao({ onAbrirClientes }) {
                         <h2 id="confirm-title">Remover item?</h2>
                         <p>
                             Tem certeza que deseja remover o item de {itemParaExcluir.cliente}?
+                            {itemParaExcluir.valor_final && ' O romaneio automático também será removido.'}
                         </p>
+                        {erroModal && <p className="production-error" role="alert">{erroModal}</p>}
                         <footer>
-                            <button className="secondary-button" type="button" onClick={() => setItemParaExcluir(null)}>
+                            <button className="secondary-button" type="button" disabled={salvando} onClick={() => setItemParaExcluir(null)}>
                                 Cancelar
                             </button>
-                            <button className="danger-button" type="button" onClick={confirmarExclusao}>
+                            <button className="danger-button" type="button" disabled={salvando} onClick={confirmarExclusao}>
                                 Remover
                             </button>
                         </footer>

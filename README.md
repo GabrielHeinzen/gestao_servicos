@@ -10,7 +10,7 @@ Sistema local para acompanhar a producao e os lancamentos financeiros de uma emp
 - **Gastos / Despesas:** registro de documento, empresa, data e valor.
 - **Relatorios:** visoes separadas de NF, Romaneio e Geral, com graficos mensais e anuais.
 
-No relatorio Geral, um Romaneio nao e somado novamente quando existe uma NF com o mesmo cliente, data e valor. Nesse caso, apenas a NF entra no faturamento geral. Os relatorios separados continuam mostrando todos os Romaneios e todas as NFs.
+No cadastro ou na edicao de uma NF, o campo opcional de romaneio sugere os lancamentos disponiveis do mesmo cliente e valor, com as respectivas datas. No relatorio Geral, o valor de um par vinculado entra uma vez, na data da NF. Os relatorios separados mostram cada documento na propria data. Os registros feitos antes da atualizacao mantem a comparacao por cliente, data e valor ate a revisao do vinculo.
 
 ## Tecnologias
 

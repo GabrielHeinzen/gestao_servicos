@@ -30,9 +30,12 @@ function calcularRelatorio(registros, ano, mesSelecionado) {
     meses.forEach((resumo, indice) => { resumo.mes = indice + 1; });
     const dias = Array.from({ length: quantidadeDias }, (_, indice) => resumoVazio('dia'));
     dias.forEach((resumo, indice) => { resumo.dia = indice + 1; });
-    const chavesNf = new Set(
-        registros.filter((registro) => registro.tipo === 'nf').map(chaveCorrespondencia)
-    );
+    const notasLegadasPorChave = new Map();
+    for (const registro of registros) {
+        if (registro.tipo !== 'nf' || !registro.conciliacao_legada) continue;
+        const chave = chaveCorrespondencia(registro);
+        notasLegadasPorChave.set(chave, (notasLegadasPorChave.get(chave) || 0) + 1);
+    }
 
     for (const registro of registros) {
         const [, mesTexto, diaTexto] = registro.data.split('-');
@@ -51,11 +54,19 @@ function calcularRelatorio(registros, ano, mesSelecionado) {
         somar(resumoMes, registro.tipo, valor);
         if (resumoDia) somar(resumoDia, registro.tipo, valor);
 
-        const duplicadoPorNf = registro.tipo === 'romaneio' && chavesNf.has(chaveCorrespondencia(registro));
-        if (!duplicadoPorNf) {
-            somar(resumoMes, 'geral', valor);
-            if (resumoDia) somar(resumoDia, 'geral', valor);
+        if (registro.tipo === 'romaneio') {
+            if (registro.vinculado_a_nf) continue;
+            if (registro.conciliacao_legada) {
+                const chave = chaveCorrespondencia(registro);
+                const quantidade = notasLegadasPorChave.get(chave) || 0;
+                if (quantidade > 0) {
+                    notasLegadasPorChave.set(chave, quantidade - 1);
+                    continue;
+                }
+            }
         }
+        somar(resumoMes, 'geral', valor);
+        if (resumoDia) somar(resumoDia, 'geral', valor);
     }
 
     meses.forEach(finalizar);

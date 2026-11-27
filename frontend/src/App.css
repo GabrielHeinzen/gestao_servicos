@@ -611,6 +611,16 @@
   background: #f4faf5;
 }
 
+.production-status-column { width: 128px; }
+.production-value-column { width: 112px; }
+.production-actions-column { width: 132px; }
+.production-page .production-table td { overflow-wrap: anywhere; }
+.production-table .money-cell {
+  color: #1b6041;
+  font-weight: 750;
+  font-variant-numeric: tabular-nums;
+}
+
 .status-pill {
   display: inline-flex;
   align-items: center;
@@ -633,6 +643,16 @@
 .status-coletado {
   background: #e4edf1;
   color: #38637a;
+}
+
+.status-atrasado {
+  background: #fff1d5;
+  color: #805012;
+}
+
+.status-cancelado {
+  background: #f5e6e6;
+  color: #892d2d;
 }
 
 .actions-menu {
@@ -838,7 +858,8 @@
 }
 
 .item-modal input,
-.item-modal select {
+.item-modal select,
+.item-modal textarea {
   height: 42px;
   border: 1px solid #d7dde5;
   border-radius: 8px;
@@ -855,9 +876,31 @@
 }
 
 .item-modal input:focus,
-.item-modal select:focus {
+.item-modal select:focus,
+.item-modal textarea:focus {
   border-color: #31845a;
   box-shadow: 0 0 0 3px rgba(49, 132, 90, 0.13);
+}
+
+.item-modal textarea {
+  height: auto;
+  min-height: 84px;
+  padding: 10px 12px;
+  line-height: 1.45;
+  resize: vertical;
+}
+
+.production-modal {
+  max-height: calc(100svh - 40px);
+  overflow-y: auto;
+}
+
+.production-modal > p:not(.production-error) {
+  margin: 0;
+  color: #536174;
+  font-size: 14px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
 }
 
 .inline-client-button {
@@ -919,6 +962,28 @@
 
   .production-table {
     min-width: 720px;
+  }
+}
+
+@media (max-width: 1160px) {
+  .production-page .production-table-wrap {
+    overflow-x: auto;
+  }
+
+  .production-page .production-table {
+    min-width: 780px;
+  }
+
+  .production-page .actions-menu[open] .actions-list {
+    position: static;
+    width: 92px;
+    box-sizing: border-box;
+    margin-top: 6px;
+  }
+
+  .production-page .actions-list button {
+    padding: 0 4px;
+    font-size: 12px;
   }
 }
 
@@ -1104,7 +1169,7 @@
 .finance-table-wrap { overflow-x: auto; }
 .finance-table { min-width: 660px; }
 .finance-table .company-cell { color: #294d38; font-weight: 700; }
-.finance-table .money-cell { color: #1b6041; font-weight: 750; font-variant-numeric: tabular-nums; }
+.finance-origin { color: #526a5b; font-size: 12px; font-weight: 700; }
 .finance-table th:last-child, .finance-table td:last-child { width: 100px; }
 .table-icon-button { width: 32px; height: 32px; display: grid; place-items: center; border: 0; border-radius: 6px; background: #e6f0e8; color: #286144; cursor: pointer; }
 .table-icon-button:hover { background: #d6e9dc; }

@@ -15,13 +15,17 @@ const TIPOS = {
     despesa: { titulo: 'Gastos / Despesas', singular: 'Despesa' }
 };
 
+const REGRA_ANTERIOR = 'legado';
+
 function formularioVazio() {
-    return { cliente_id: '', empresa: '', data: new Date().toLocaleDateString('en-CA'), valor: '', numero_nf: '', documento: '' };
+    return { cliente_id: '', empresa: '', data: new Date().toLocaleDateString('en-CA'), valor: '', numero_nf: '', documento: '', romaneio_id: '' };
 }
 
 function Lancamentos({ tipo, onTipoChange, onAbrirClientes }) {
     const [itens, setItens] = useState([]);
     const [clientes, setClientes] = useState([]);
+    const [romaneios, setRomaneios] = useState([]);
+    const [erroRomaneios, setErroRomaneios] = useState('');
     const [carregando, setCarregando] = useState(true);
     const [versao, setVersao] = useState(0);
     const [busca, setBusca] = useState('');
@@ -55,6 +59,18 @@ function Lancamentos({ tipo, onTipoChange, onAbrirClientes }) {
     }, [tipo, versao]);
 
     useEffect(() => {
+        if (tipo !== 'nf' || !modalAberto) return;
+
+        let ativo = true;
+        setRomaneios([]);
+        setErroRomaneios('');
+        listarLancamentos('romaneio')
+            .then((dados) => { if (ativo) setRomaneios(dados); })
+            .catch((falha) => { if (ativo) setErroRomaneios(falha.message); });
+        return () => { ativo = false; };
+    }, [tipo, modalAberto]);
+
+    useEffect(() => {
         if (tipo === 'despesa') return undefined;
         let ativo = true;
         listarClientes()
@@ -76,14 +92,16 @@ function Lancamentos({ tipo, onTipoChange, onAbrirClientes }) {
     }
 
     function abrirEdicao(item) {
-        const clienteCorrespondente = clientes.find((cliente) => cliente.id === Number(item.cliente_id))
-            || clientes.find((cliente) => cliente.nome.toLocaleLowerCase('pt-BR') === item.empresa.toLocaleLowerCase('pt-BR'));
+        const clienteId = item.cliente_id ?? clientes.find((cliente) =>
+            cliente.nome.toLocaleLowerCase('pt-BR') === item.empresa.toLocaleLowerCase('pt-BR')
+        )?.id;
         setFormulario({
-            cliente_id: clienteCorrespondente?.id ? String(clienteCorrespondente.id) : '',
+            cliente_id: clienteId ? String(clienteId) : '',
             empresa: item.empresa,
             data: item.data,
             valor: item.valor,
             numero_nf: item.numero_nf || '',
+            romaneio_id: item.romaneio_id ? String(item.romaneio_id) : item.conciliacao_legada ? REGRA_ANTERIOR : '',
             documento: item.documento || ''
         });
         setEditando(item);
@@ -95,12 +113,16 @@ function Lancamentos({ tipo, onTipoChange, onAbrirClientes }) {
         event.preventDefault();
         setSalvando(true);
         setErroModal('');
+        const { romaneio_id, ...dados } = formulario;
         const item = {
-            ...formulario,
+            ...dados,
             cliente_id: tipo === 'despesa' ? null : Number(formulario.cliente_id),
             tipo,
             valor: Number(formulario.valor)
         };
+        if (tipo === 'nf' && romaneio_id !== REGRA_ANTERIOR) {
+            item.romaneio_id = romaneio_id ? Number(romaneio_id) : null;
+        }
         try {
             if (editando) await atualizarLancamento(editando.id, item);
             else await criarLancamento(item);
@@ -136,6 +158,17 @@ function Lancamentos({ tipo, onTipoChange, onAbrirClientes }) {
     );
     const total = itens.reduce((soma, item) => soma + Number(item.valor), 0);
     const titulo = tipo === 'despesa' ? 'Gastos / Despesas' : 'Financeiro';
+    const idClienteSelecionado = Number(formulario.cliente_id);
+    const nomeClienteSelecionado = clientes.find((cliente) => cliente.id === idClienteSelecionado)?.nome;
+    const romaneiosDisponiveis = romaneios.filter((romaneio) => {
+        const mesmoCliente = romaneio.cliente_id === idClienteSelecionado || (
+            romaneio.cliente_id == null && nomeClienteSelecionado
+            && romaneio.empresa.trim().toLocaleLowerCase('pt-BR') === nomeClienteSelecionado.trim().toLocaleLowerCase('pt-BR')
+        );
+        return mesmoCliente && Number(romaneio.valor) === Number(formulario.valor)
+            && (!romaneio.nf_vinculada_id || romaneio.nf_vinculada_id === editando?.id);
+    });
+    const vinculoAtual = Number(formulario.romaneio_id);
 
     return (
         <section className="finance-page">
@@ -185,14 +218,21 @@ function Lancamentos({ tipo, onTipoChange, onAbrirClientes }) {
                             {carregando ? <tr><td className="empty-row" colSpan={tipo === 'romaneio' ? 4 : 5}>Carregando lançamentos...</td></tr> :
                                 visiveis.length === 0 ? <tr><td className="empty-row" colSpan={tipo === 'romaneio' ? 4 : 5}>{termo ? 'Nenhum resultado encontrado.' : 'Nenhum lançamento cadastrado.'}</td></tr> :
                                     visiveis.map((item) => <tr key={item.id}>
-                                        {tipo === 'nf' && <td>{item.numero_nf}</td>}
+                                        {tipo === 'nf' && <td>
+                                            {item.numero_nf}
+                                            {item.romaneio_id && <><br /><small className="finance-origin">Romaneio #{item.romaneio_id}</small></>}
+                                        </td>}
                                         {tipo === 'despesa' && <td>{item.documento}</td>}
                                         <td className="company-cell">{item.empresa}</td>
                                         <td>{formatarData(item.data)}</td>
                                         <td className="money-cell">{formatarMoeda(item.valor)}</td>
                                         <td><div className="row-actions">
                                             <button className="table-icon-button" type="button" title="Editar" aria-label={`Editar lançamento de ${item.empresa}`} onClick={() => abrirEdicao(item)}><Pencil size={17} /></button>
-                                            <button className="delete-item-button" type="button" title="Excluir" aria-label={`Excluir lançamento de ${item.empresa}`} onClick={() => { setErroModal(''); setExcluindo(item); }}><Trash2 size={17} /></button>
+                                            {item.producao_id ? (
+                                                <span className="finance-origin" title="Romaneio vinculado a um serviço da Produção">Produção</span>
+                                            ) : (
+                                                <button className="delete-item-button" type="button" title="Excluir" aria-label={`Excluir lançamento de ${item.empresa}`} onClick={() => { setErroModal(''); setExcluindo(item); }}><Trash2 size={17} /></button>
+                                            )}
                                         </div></td>
                                     </tr>)}
                         </tbody>
@@ -208,7 +248,7 @@ function Lancamentos({ tipo, onTipoChange, onAbrirClientes }) {
                     {tipo === 'despesa' && <label htmlFor="documento">Documento<input id="documento" name="documento" value={formulario.documento} maxLength={120} onChange={(event) => setFormulario({ ...formulario, documento: event.target.value })} required /></label>}
                     {tipo === 'despesa' ?
                         <label htmlFor="empresa">Empresa<input id="empresa" name="empresa" value={formulario.empresa} maxLength={120} onChange={(event) => setFormulario({ ...formulario, empresa: event.target.value })} required /></label> :
-                        <label htmlFor="cliente-financeiro">Cliente
+                        <label htmlFor="cliente-financeiro">{editando?.producao_id ? 'Cliente do serviço' : 'Cliente'}
                             <select id="cliente-financeiro" name="cliente_id" value={formulario.cliente_id} onChange={(event) => setFormulario({ ...formulario, cliente_id: event.target.value })} required>
                                 <option value="">Selecione um cliente</option>
                                 {clientes.map((cliente) => <option key={cliente.id} value={cliente.id}>{cliente.nome}</option>)}
@@ -217,6 +257,23 @@ function Lancamentos({ tipo, onTipoChange, onAbrirClientes }) {
                         </label>}
                     <label htmlFor="data-financeira">{tipo === 'despesa' ? 'Data de compra' : 'Data'}<input id="data-financeira" name="data" type="date" value={formulario.data} onChange={(event) => setFormulario({ ...formulario, data: event.target.value })} required /></label>
                     <label htmlFor="valor">Valor<input id="valor" name="valor" type="number" inputMode="decimal" step="0.01" min="0.01" value={formulario.valor} onChange={(event) => setFormulario({ ...formulario, valor: event.target.value })} required /></label>
+                    {tipo === 'nf' && <label htmlFor="romaneio-vinculado">
+                        Romaneio vinculado (opcional)
+                        <select id="romaneio-vinculado" value={formulario.romaneio_id}
+                            onChange={(event) => setFormulario({ ...formulario, romaneio_id: event.target.value })}>
+                            <option value="">Sem romaneio (NF avulsa)</option>
+                            {editando?.conciliacao_legada && <option value={REGRA_ANTERIOR}>Manter regra anterior (mesma data)</option>}
+                            {vinculoAtual > 0 && !romaneiosDisponiveis.some((romaneio) => romaneio.id === vinculoAtual) && (
+                                <option value={vinculoAtual}>Romaneio #{vinculoAtual}</option>
+                            )}
+                            {romaneiosDisponiveis.map((romaneio) => (
+                                <option key={romaneio.id} value={romaneio.id}>
+                                    #{romaneio.id} · {formatarData(romaneio.data)} · {formatarMoeda(romaneio.valor)}
+                                </option>
+                            ))}
+                        </select>
+                    </label>}
+                    {tipo === 'nf' && erroRomaneios && <p className="production-error" role="alert">{erroRomaneios}</p>}
                     {erroModal && <p className="production-error" role="alert">{erroModal}</p>}
                     <footer><button className="secondary-button" type="button" onClick={() => setModalAberto(false)}>Cancelar</button><button className="primary-button" type="submit" disabled={salvando}>{salvando ? 'Salvando...' : 'Salvar'}</button></footer>
                 </form>

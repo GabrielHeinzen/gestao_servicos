@@ -9,3 +9,18 @@ const db = new Pool({
 });
 
 module.exports = db;
+
+module.exports.emTransacao = async function emTransacao(operacao) {
+    const conexao = await db.connect();
+    try {
+        await conexao.query('BEGIN');
+        const resultado = await operacao(conexao);
+        await conexao.query('COMMIT');
+        return resultado;
+    } catch (erro) {
+        await conexao.query('ROLLBACK');
+        throw erro;
+    } finally {
+        conexao.release();
+    }
+};

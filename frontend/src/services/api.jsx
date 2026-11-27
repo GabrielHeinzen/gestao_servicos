@@ -79,13 +79,13 @@ export function atualizarProducao(id, item) {
     });
 }
 
-export function atualizarStatusProducao(id, status) {
+export function atualizarStatusProducao(id, status, valorFinal) {
     return solicitarProducao(`/${id}/status`, {
         method: "PATCH",
         headers: {
             "Content-Type": "application/json"
         },
-        body: JSON.stringify({ status })
+        body: JSON.stringify({ status, valor_final: valorFinal })
     });
 }
 
