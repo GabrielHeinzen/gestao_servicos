@@ -19,6 +19,20 @@ No cadastro ou na edicao de uma NF, o campo opcional de romaneio sugere os lanca
 - Banco: PostgreSQL 16.
 - Execucao conjunta: Docker Compose.
 
+## Aplicativo Windows sem Docker
+
+A versao desktop para Windows x64 inclui a interface, a API e um PostgreSQL local. Na primeira abertura, o aplicativo cria uma base vazia em `%LOCALAPPDATA%\GestaoServicosDados`. Nas proximas aberturas, usa os dados desse diretorio. O banco do Compose e separado.
+
+Para gerar o instalador em uma maquina Windows x64 com Node.js 22+, execute na raiz do projeto:
+
+```powershell
+npm --prefix frontend ci
+npm --prefix desktop ci
+npm --prefix desktop run make
+```
+
+O instalador `Setup.exe` e gerado em `desktop/out/make`. Para abrir a versao de desenvolvimento, use `npm --prefix desktop start`. O aplicativo gerencia o PostgreSQL local durante a execucao e usa a mesma tela de login. Guarde a pasta de dados ao fazer backup ou trocar de computador.
+
 ## Como rodar com Docker
 
 Instale o [Docker Desktop](https://www.docker.com/products/docker-desktop/) e deixe-o aberto. No terminal, na raiz deste repositorio, execute:

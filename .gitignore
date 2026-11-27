@@ -2,3 +2,5 @@
 **/node_modules/
 **/dist/
 *.log
+/desktop/out/
+/desktop/runtime/
