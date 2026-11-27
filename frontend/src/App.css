@@ -1211,6 +1211,7 @@
 .finance-table { min-width: 660px; }
 .finance-table .company-cell { color: #294d38; font-weight: 700; }
 .finance-origin { color: #526a5b; font-size: 12px; font-weight: 700; }
+.finance-description { display: block; margin-top: 4px; color: #526a5b; font-size: 12px; overflow-wrap: anywhere; }
 .finance-table th:last-child, .finance-table td:last-child { width: 100px; }
 .table-icon-button { width: 32px; height: 32px; display: grid; place-items: center; border: 0; border-radius: 6px; background: #e6f0e8; color: #286144; cursor: pointer; }
 .table-icon-button:hover { background: #d6e9dc; }

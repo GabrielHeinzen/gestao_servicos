@@ -18,7 +18,10 @@ const TIPOS = {
 const REGRA_ANTERIOR = 'legado';
 
 function formularioVazio() {
-    return { cliente_id: '', empresa: '', data: new Date().toLocaleDateString('en-CA'), valor: '', numero_nf: '', documento: '', romaneio_id: '' };
+    return {
+        cliente_id: '', empresa: '', data: new Date().toLocaleDateString('en-CA'),
+        valor: '', numero_nf: '', descricao: '', documento: '', romaneio_id: ''
+    };
 }
 
 function Lancamentos({ tipo, onTipoChange, onAbrirClientes }) {
@@ -101,6 +104,7 @@ function Lancamentos({ tipo, onTipoChange, onAbrirClientes }) {
             data: item.data,
             valor: item.valor,
             numero_nf: item.numero_nf || '',
+            descricao: item.descricao || '',
             romaneio_id: item.romaneio_id ? String(item.romaneio_id) : item.conciliacao_legada ? REGRA_ANTERIOR : '',
             documento: item.documento || ''
         });
@@ -113,13 +117,14 @@ function Lancamentos({ tipo, onTipoChange, onAbrirClientes }) {
         event.preventDefault();
         setSalvando(true);
         setErroModal('');
-        const { romaneio_id, ...dados } = formulario;
+        const { romaneio_id, descricao, ...dados } = formulario;
         const item = {
             ...dados,
             cliente_id: tipo === 'despesa' ? null : Number(formulario.cliente_id),
             tipo,
             valor: Number(formulario.valor)
         };
+        if (tipo === 'nf') item.descricao = descricao;
         if (tipo === 'nf' && romaneio_id !== REGRA_ANTERIOR) {
             item.romaneio_id = romaneio_id ? Number(romaneio_id) : null;
         }
@@ -152,12 +157,13 @@ function Lancamentos({ tipo, onTipoChange, onAbrirClientes }) {
 
     const termo = busca.trim().toLocaleLowerCase('pt-BR');
     const visiveis = itens.filter((item) =>
-        [item.empresa, item.numero_nf, item.documento].some((valor) =>
+        [item.empresa, item.numero_nf, item.documento, item.descricao].some((valor) =>
             valor?.toLocaleLowerCase('pt-BR').includes(termo)
         )
     );
     const total = itens.reduce((soma, item) => soma + Number(item.valor), 0);
     const titulo = tipo === 'despesa' ? 'Gastos / Despesas' : 'Financeiro';
+    const rotuloLancamento = tipo === 'nf' ? 'NF' : TIPOS[tipo].singular.toLowerCase();
     const idClienteSelecionado = Number(formulario.cliente_id);
     const nomeClienteSelecionado = clientes.find((cliente) => cliente.id === idClienteSelecionado)?.nome;
     const romaneiosDisponiveis = romaneios.filter((romaneio) => {
@@ -178,7 +184,7 @@ function Lancamentos({ tipo, onTipoChange, onAbrirClientes }) {
                     <h1>{titulo}</h1>
                 </div>
                 <button className="add-item-button" type="button" onClick={abrirNovo}>
-                    <Plus size={18} /> Adicionar {tipo === 'nf' ? 'NF' : TIPOS[tipo].singular.toLowerCase()}
+                    <Plus size={18} /> Adicionar {rotuloLancamento}
                 </button>
             </header>
 
@@ -200,7 +206,8 @@ function Lancamentos({ tipo, onTipoChange, onAbrirClientes }) {
                     <label className="search-box">
                         <Search size={17} aria-hidden="true" />
                         <span className="sr-only">Buscar lançamento</span>
-                        <input type="search" placeholder="Buscar empresa ou documento" value={busca} onChange={(event) => setBusca(event.target.value)} />
+                        <input type="search" placeholder={tipo === 'nf' ? 'Buscar empresa, número ou descrição' : 'Buscar empresa ou documento'}
+                            value={busca} onChange={(event) => setBusca(event.target.value)} />
                     </label>
                 </div>
 
@@ -220,6 +227,7 @@ function Lancamentos({ tipo, onTipoChange, onAbrirClientes }) {
                                     visiveis.map((item) => <tr key={item.id}>
                                         {tipo === 'nf' && <td>
                                             {item.numero_nf}
+                                            {item.descricao && <span className="finance-description">{item.descricao}</span>}
                                             {item.romaneio_id && <><br /><small className="finance-origin">Romaneio #{item.romaneio_id}</small></>}
                                         </td>}
                                         {tipo === 'despesa' && <td>{item.documento}</td>}
@@ -243,7 +251,7 @@ function Lancamentos({ tipo, onTipoChange, onAbrirClientes }) {
 
             {modalAberto && <div className="modal-backdrop">
                 <form className="item-modal finance-modal" onSubmit={salvar} role="dialog" aria-modal="true" aria-labelledby="finance-modal-title">
-                    <header><h2 id="finance-modal-title">{editando ? 'Editar' : 'Adicionar'} {TIPOS[tipo].singular.toLowerCase()}</h2><button type="button" onClick={() => setModalAberto(false)} aria-label="Fechar"><X size={18} /></button></header>
+                    <header><h2 id="finance-modal-title">{editando ? 'Editar' : 'Adicionar'} {rotuloLancamento}</h2><button type="button" onClick={() => setModalAberto(false)} aria-label="Fechar"><X size={18} /></button></header>
                     {tipo === 'nf' && <label htmlFor="numero_nf">Número NF<input id="numero_nf" name="numero_nf" value={formulario.numero_nf} maxLength={80} onChange={(event) => setFormulario({ ...formulario, numero_nf: event.target.value })} required /></label>}
                     {tipo === 'despesa' && <label htmlFor="documento">Documento<input id="documento" name="documento" value={formulario.documento} maxLength={120} onChange={(event) => setFormulario({ ...formulario, documento: event.target.value })} required /></label>}
                     {tipo === 'despesa' ?
@@ -272,6 +280,11 @@ function Lancamentos({ tipo, onTipoChange, onAbrirClientes }) {
                                 </option>
                             ))}
                         </select>
+                    </label>}
+                    {tipo === 'nf' && <label htmlFor="descricao-nf">
+                        Descrição (opcional)
+                        <input id="descricao-nf" name="descricao" type="text" maxLength={200}
+                            value={formulario.descricao} onChange={(event) => setFormulario({ ...formulario, descricao: event.target.value })} />
                     </label>}
                     {tipo === 'nf' && erroRomaneios && <p className="production-error" role="alert">{erroRomaneios}</p>}
                     {erroModal && <p className="production-error" role="alert">{erroModal}</p>}

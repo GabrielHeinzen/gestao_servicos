@@ -26,6 +26,7 @@ async function prepararTabela() {
             ADD COLUMN IF NOT EXISTS cliente_id INTEGER,
             ADD COLUMN IF NOT EXISTS producao_id INTEGER,
             ADD COLUMN IF NOT EXISTS romaneio_id INTEGER,
+            ADD COLUMN IF NOT EXISTS descricao VARCHAR(200),
             ADD COLUMN IF NOT EXISTS conciliacao_legada BOOLEAN NOT NULL DEFAULT TRUE;
         ALTER TABLE lancamentos_financeiros ALTER COLUMN conciliacao_legada SET DEFAULT FALSE;
         CREATE UNIQUE INDEX IF NOT EXISTS lancamentos_producao_unica
@@ -72,7 +73,7 @@ function garantirTabela() {
     return tabelaPromise;
 }
 
-const COLUNAS = `id, tipo, cliente_id, producao_id, romaneio_id, conciliacao_legada, numero_nf, documento, empresa,
+const COLUNAS = `id, tipo, cliente_id, producao_id, romaneio_id, conciliacao_legada, numero_nf, descricao, documento, empresa,
     TO_CHAR(data, 'YYYY-MM-DD') AS data, valor, criado_em`;
 
 async function listar(tipo) {
@@ -116,10 +117,11 @@ async function criar(item) {
         await identificarRomaneioLegado(conexao, romaneio, item.cliente_id);
         const resultado = await conexao.query(
             `INSERT INTO lancamentos_financeiros
-                (tipo, cliente_id, numero_nf, documento, empresa, data, valor, romaneio_id)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+                (tipo, cliente_id, numero_nf, documento, empresa, data, valor, romaneio_id, descricao)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
              RETURNING ${COLUNAS}`,
-            [item.tipo, item.cliente_id, item.numero_nf, item.documento, item.empresa, item.data, item.valor, item.romaneio_id]
+            [item.tipo, item.cliente_id, item.numero_nf, item.documento, item.empresa, item.data,
+                item.valor, item.romaneio_id, item.descricao]
         );
         return resultado.rows[0];
     });
@@ -136,11 +138,13 @@ async function atualizarDados(conexao, id, item) {
         `UPDATE lancamentos_financeiros
          SET cliente_id = $1, numero_nf = $2, documento = $3, empresa = $4, data = $5, valor = $6,
              romaneio_id = CASE WHEN $9 THEN $10 ELSE romaneio_id END,
-             conciliacao_legada = conciliacao_legada AND NOT $9
+             conciliacao_legada = conciliacao_legada AND NOT $9,
+             descricao = CASE WHEN $11 THEN $12 ELSE descricao END
          WHERE id = $7 AND tipo = $8
          RETURNING ${COLUNAS}`,
         [item.cliente_id, item.numero_nf, item.documento, item.empresa, item.data, item.valor,
-            id, item.tipo, item.tipo === 'nf' && item.romaneio_id !== undefined, item.romaneio_id]
+            id, item.tipo, item.tipo === 'nf' && item.romaneio_id !== undefined, item.romaneio_id,
+            item.tipo === 'nf' && item.descricao !== undefined, item.descricao]
     );
     return resultado.rows[0];
 }

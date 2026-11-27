@@ -17,6 +17,7 @@ async function validar(body, tipoObrigatorio) {
     const valor = Number(body.valor);
     const clienteId = Number(body.cliente_id);
     let romaneioId;
+    let descricao;
 
     if (!financeiroModel.TIPOS.includes(tipo)) return { erro: 'Tipo de lancamento invalido.' };
     if (!dataValida(body.data)) return { erro: 'Informe uma data valida.' };
@@ -24,6 +25,13 @@ async function validar(body, tipoObrigatorio) {
         return { erro: 'Informe um valor positivo com ate duas casas decimais.' };
     }
     if (tipo === 'nf' && (!numero_nf || numero_nf.length > 80)) return { erro: 'Informe o numero da NF.' };
+    if (tipo === 'nf' && Object.hasOwn(body, 'descricao')) {
+        if (body.descricao !== null && typeof body.descricao !== 'string') {
+            return { erro: 'Informe uma descrição em texto.' };
+        }
+        descricao = body.descricao?.trim() || null;
+        if (descricao?.length > 200) return { erro: 'A descrição pode ter até 200 caracteres.' };
+    }
     if (tipo === 'nf' && Object.hasOwn(body, 'romaneio_id')) {
         if (body.romaneio_id === null) romaneioId = null;
         else if (idValido(body.romaneio_id) && Number(body.romaneio_id) <= 2147483647) romaneioId = Number(body.romaneio_id);
@@ -44,6 +52,7 @@ async function validar(body, tipoObrigatorio) {
             tipo,
             cliente_id: tipo === 'despesa' ? null : clienteId,
             numero_nf: tipo === 'nf' ? numero_nf : null,
+            descricao,
             romaneio_id: romaneioId,
             documento: tipo === 'despesa' ? documento : null,
             empresa,
