@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { Plus, Trash2, X } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { FileText, Plus, Trash2, X } from 'lucide-react';
 import {
     atualizarProducao,
     atualizarStatusProducao,
@@ -24,6 +24,8 @@ function Producao({ onAbrirClientes }) {
     const [modalAberto, setModalAberto] = useState(false);
     const [itemParaExcluir, setItemParaExcluir] = useState(null);
     const [itemEditando, setItemEditando] = useState(null);
+    const [itemObservacao, setItemObservacao] = useState(null);
+    const dialogoObservacao = useRef(null);
     const [alteracaoPendente, setAlteracaoPendente] = useState(null);
     const [valorFinal, setValorFinal] = useState('');
     const [carregando, setCarregando] = useState(true);
@@ -34,6 +36,11 @@ function Producao({ onAbrirClientes }) {
     useEffect(() => {
         carregarItens();
     }, []);
+
+    useEffect(() => {
+        const dialogo = dialogoObservacao.current;
+        if (itemObservacao && dialogo && !dialogo.open) dialogo.showModal();
+    }, [itemObservacao]);
 
     useEffect(() => {
         if (carregando || salvando) return;
@@ -212,7 +219,20 @@ function Producao({ onAbrirClientes }) {
                         {!carregando && itens.map((item) => (
                             <tr key={item.id}>
                                 <td>{item.cliente}</td>
-                                <td>{item.tipo_lamina}</td>
+                                <td>
+                                    {item.tipo_lamina}
+                                    {item.observacao?.trim() && (
+                                        <button
+                                            className="observation-trigger"
+                                            type="button"
+                                            aria-label={`Ver observação do serviço de ${item.cliente}`}
+                                            onClick={() => setItemObservacao(item)}
+                                        >
+                                            <FileText size={14} aria-hidden="true" />
+                                            <span>Ver observação</span>
+                                        </button>
+                                    )}
+                                </td>
                                 <td>{formatarData(item.data)}</td>
                                 <td>
                                     <span className={`status-pill status-${item.status.toLowerCase().replace(/\s/g, '-')}`}>
@@ -254,6 +274,24 @@ function Producao({ onAbrirClientes }) {
             </div>
 
             {erro && <p className="production-error" role="alert">{erro}</p>}
+
+            {itemObservacao && (
+                <dialog
+                    ref={dialogoObservacao}
+                    className="item-modal production-modal observation-dialog"
+                    aria-labelledby="observation-title"
+                    onClose={() => setItemObservacao(null)}
+                >
+                    <header>
+                        <h2 id="observation-title">Descrição / Observação</h2>
+                        <button type="button" onClick={() => dialogoObservacao.current.close()} aria-label="Fechar">
+                            <X size={18} aria-hidden="true" />
+                        </button>
+                    </header>
+                    <p>{itemObservacao.cliente} · {itemObservacao.tipo_lamina}</p>
+                    <div className="observation-content" tabIndex={0}>{itemObservacao.observacao}</div>
+                </dialog>
+            )}
 
             {modalAberto && (
                 <div className="modal-backdrop" role="presentation">
