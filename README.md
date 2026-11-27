@@ -33,9 +33,9 @@ O Electron Forge gera o `Setup.exe` em `desktop/out/make/squirrel.windows/x64/`.
 
 - **Produção** permite cadastrar serviços com cliente, tipo de lâmina, data e observações. O status **Atrasado** aparece no oitavo dia útil após a data do serviço. A contagem considera segunda a sexta, sem descontar feriados. É possível marcar o serviço como **Pronto**, **Coletado** ou **Cancelado**.
 - **Clientes** reúne os cadastros de empresas usados na Produção e nos lançamentos financeiros.
-- **Financeiro** reúne romaneios e notas fiscais. Ao marcar um serviço como **Pronto**, o aplicativo pede o valor final, mostra esse valor na Produção e cria um romaneio automático com a data da conclusão. Reabrir ou cancelar o serviço retira o romaneio automático do faturamento.
-- Em **Gastos e despesas**, cada lançamento registra documento, empresa, data de compra e valor.
-- Os **relatórios** têm visões de NF, Romaneio e Geral, com gráficos mensais e anuais. A visão Geral inclui faturamento, despesas e lucro.
+- **Financeiro** reúne romaneios e notas fiscais. O resumo de cada aba soma os valores do mês atual, e a tabela mantém todo o histórico. A NF aceita uma descrição opcional. Ao marcar um serviço como **Pronto**, o aplicativo pede o valor final, mostra esse valor na Produção e cria um romaneio automático com a data da conclusão. Reabrir ou cancelar o serviço retira o romaneio automático do faturamento.
+- Em **Gastos / Despesas**, cada lançamento registra documento, empresa, data de compra e valor. A tela mostra os totais do mês e do ano atuais pela data de compra e mantém todos os lançamentos na tabela.
+- Os **relatórios** têm visões de NF, Romaneio e Geral, com gráficos mensais e anuais. A visão Geral inclui faturamento, despesas e lucro. O gráfico **Despesas por mês** mostra os gastos de janeiro a dezembro do ano selecionado.
 
 ### Vínculo entre romaneio e NF
 
