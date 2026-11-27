@@ -16,6 +16,7 @@ const TIPOS = {
 };
 
 const REGRA_ANTERIOR = 'legado';
+const DATA_FINANCEIRA = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Sao_Paulo' });
 
 function formularioVazio() {
     return {
@@ -85,6 +86,13 @@ function Lancamentos({ tipo, onTipoChange, onAbrirClientes }) {
     function recarregar() {
         setCarregando(true);
         setVersao((valor) => valor + 1);
+    }
+
+    function trocarTipo(novoTipo) {
+        if (novoTipo === tipo) return;
+        setBusca('');
+        setCarregando(true);
+        onTipoChange(novoTipo);
     }
 
     function abrirNovo() {
@@ -161,8 +169,13 @@ function Lancamentos({ tipo, onTipoChange, onAbrirClientes }) {
             valor?.toLocaleLowerCase('pt-BR').includes(termo)
         )
     );
-    const total = itens.reduce((soma, item) => soma + Number(item.valor), 0);
-    const titulo = tipo === 'despesa' ? 'Gastos / Despesas' : 'Financeiro';
+    const receita = tipo !== 'despesa';
+    const mesAtual = DATA_FINANCEIRA.format().slice(0, 7);
+    const total = itens.reduce((soma, item) => {
+        if (receita && !item.data.startsWith(`${mesAtual}-`)) return soma;
+        return soma + Number(item.valor);
+    }, 0);
+    const titulo = receita ? 'Financeiro' : 'Gastos / Despesas';
     const rotuloLancamento = tipo === 'nf' ? 'NF' : TIPOS[tipo].singular.toLowerCase();
     const idClienteSelecionado = Number(formulario.cliente_id);
     const nomeClienteSelecionado = clientes.find((cliente) => cliente.id === idClienteSelecionado)?.nome;
@@ -190,15 +203,21 @@ function Lancamentos({ tipo, onTipoChange, onAbrirClientes }) {
 
             {onTipoChange && (
                 <div className="finance-tabs" data-active={tipo} role="group" aria-label="Tipo de receita">
-                    <button type="button" aria-pressed={tipo === 'romaneio'} className={tipo === 'romaneio' ? 'active' : ''} onClick={() => { setBusca(''); setCarregando(true); onTipoChange('romaneio'); }}>Romaneios</button>
-                    <button type="button" aria-pressed={tipo === 'nf'} className={tipo === 'nf' ? 'active' : ''} onClick={() => { setBusca(''); setCarregando(true); onTipoChange('nf'); }}>Notas fiscais</button>
+                    <button type="button" aria-pressed={tipo === 'romaneio'} className={tipo === 'romaneio' ? 'active' : ''} onClick={() => trocarTipo('romaneio')}>Romaneios</button>
+                    <button type="button" aria-pressed={tipo === 'nf'} className={tipo === 'nf' ? 'active' : ''} onClick={() => trocarTipo('nf')}>Notas fiscais</button>
                 </div>
             )}
 
             <div key={tipo} className={`finance-tab-content finance-tab-content--${tipo}`}>
                 <div className="finance-summary">
-                    <div><span>Total em {TIPOS[tipo].titulo.toLowerCase()}</span><strong>{formatarMoeda(total)}</strong></div>
-                    <div><span>Lançamentos</span><strong>{itens.length}</strong></div>
+                    <div>
+                        <span>{receita ? 'Total mensal' : 'Total'} em {TIPOS[tipo].titulo.toLowerCase()}</span>
+                        <strong>{carregando ? '-' : formatarMoeda(total)}</strong>
+                    </div>
+                    <div>
+                        <span>{receita ? 'Lançamentos no histórico' : 'Lançamentos'}</span>
+                        <strong>{carregando ? '-' : itens.length}</strong>
+                    </div>
                 </div>
 
                 <div className="list-heading">
