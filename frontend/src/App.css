@@ -1157,11 +1157,14 @@
 }
 
 .finance-summary span,
+.finance-history-count,
 .metric > span:not(.metric-icon) {
   color: #658171;
   font-size: 12px;
   font-weight: 700;
 }
+
+.finance-history-count { display: block; margin-top: 5px; }
 
 .finance-summary strong,
 .metric strong {
@@ -1285,11 +1288,13 @@
 .chart-romaneio { fill: #276348; }
 .chart-nf { fill: #88b59a; }
 .chart-general { fill: #2f7d5a; }
+.chart-expense { fill: #a26745; }
 .chart-profit { fill: #38846a; }
 .chart-loss { fill: #bf806e; }
 .chart-legend i.chart-romaneio { background: #276348; }
 .chart-legend i.chart-nf { background: #88b59a; }
 .chart-legend i.chart-general { background: #2f7d5a; }
+.chart-legend i.chart-expense { background: #a26745; }
 
 @media (max-width: 760px) {
   .screen-header { align-items: stretch; flex-direction: column; }

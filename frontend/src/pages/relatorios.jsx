@@ -166,6 +166,13 @@ function Relatorios() {
             </section>
             {tipo === 'geral' && <>
                 <section className="report-chart-section">
+                    <div className="chart-header">
+                        <div><h2>Despesas por mês</h2><p>Janeiro a dezembro de {ano}</p></div>
+                        <div className="chart-legend"><span><i className="chart-expense" />Despesas</span></div>
+                    </div>
+                    <GraficoBarras dados={dados.meses} campo="despesas" rotulos={MESES} ariaLabel="Gráfico anual de despesas" classe="chart-expense" />
+                </section>
+                <section className="report-chart-section">
                     <div className="chart-header"><div><h2>Lucro por dia</h2><p>Faturamento geral menos despesas</p></div><div className="chart-legend"><span><i className="legend-profit" />Positivo</span><span><i className="legend-loss" />Negativo</span></div></div>
                     <GraficoBarras dados={dados.dias} campo="lucro" rotulos={rotulosDias} ariaLabel="Grafico mensal de lucro" classe="chart-profit" />
                 </section>

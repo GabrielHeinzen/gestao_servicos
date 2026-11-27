@@ -171,10 +171,15 @@ function Lancamentos({ tipo, onTipoChange, onAbrirClientes }) {
     );
     const receita = tipo !== 'despesa';
     const mesAtual = DATA_FINANCEIRA.format().slice(0, 7);
-    const total = itens.reduce((soma, item) => {
-        if (receita && !item.data.startsWith(`${mesAtual}-`)) return soma;
-        return soma + Number(item.valor);
-    }, 0);
+    const anoAtual = mesAtual.slice(0, 4);
+    const totais = itens.reduce((resultado, item) => {
+        if (!item.data.startsWith(`${anoAtual}-`)) return resultado;
+
+        const valor = Number(item.valor);
+        resultado.ano += valor;
+        if (item.data.startsWith(`${mesAtual}-`)) resultado.mes += valor;
+        return resultado;
+    }, { mes: 0, ano: 0 });
     const titulo = receita ? 'Financeiro' : 'Gastos / Despesas';
     const rotuloLancamento = tipo === 'nf' ? 'NF' : TIPOS[tipo].singular.toLowerCase();
     const idClienteSelecionado = Number(formulario.cliente_id);
@@ -211,17 +216,24 @@ function Lancamentos({ tipo, onTipoChange, onAbrirClientes }) {
             <div key={tipo} className={`finance-tab-content finance-tab-content--${tipo}`}>
                 <div className="finance-summary">
                     <div>
-                        <span>{receita ? 'Total mensal' : 'Total'} em {TIPOS[tipo].titulo.toLowerCase()}</span>
-                        <strong>{carregando ? '-' : formatarMoeda(total)}</strong>
+                        <span>Total mensal em {receita ? TIPOS[tipo].titulo.toLowerCase() : 'despesas'}</span>
+                        <strong>{carregando ? '-' : formatarMoeda(totais.mes)}</strong>
                     </div>
                     <div>
-                        <span>{receita ? 'Lançamentos no histórico' : 'Lançamentos'}</span>
-                        <strong>{carregando ? '-' : itens.length}</strong>
+                        <span>{receita ? 'Lançamentos no histórico' : 'Total anual em despesas'}</span>
+                        <strong>{carregando ? '-' : receita ? itens.length : formatarMoeda(totais.ano)}</strong>
                     </div>
                 </div>
 
                 <div className="list-heading">
-                    <h2>{TIPOS[tipo].titulo}</h2>
+                    <div>
+                        <h2>{TIPOS[tipo].titulo}</h2>
+                        {!receita && !carregando && (
+                            <small className="finance-history-count">
+                                {itens.length} {itens.length === 1 ? 'lançamento' : 'lançamentos'} no histórico
+                            </small>
+                        )}
+                    </div>
                     <label className="search-box">
                         <Search size={17} aria-hidden="true" />
                         <span className="sr-only">Buscar lançamento</span>

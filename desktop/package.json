@@ -1,7 +1,7 @@
 {
   "name": "gestao-servicos",
   "productName": "Gestão de Serviços",
-  "version": "1.0.3",
+  "version": "1.0.5",
   "description": "Sistema local de produção e gestão financeira.",
   "author": "Gustavo Dums",
   "private": true,
